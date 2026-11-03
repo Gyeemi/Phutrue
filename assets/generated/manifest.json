@@ -1,0 +1,298 @@
+{
+  "generatedBy": "scripts/build-assets.mjs",
+  "note": "All files in assets/generated are produced from assets/brand/phutrue-logo.png. Do not edit them by hand; re-run `npm run assets`.",
+  "source": {
+    "file": "assets/brand/phutrue-logo.png",
+    "sha256": "b92315349cecc6124389abc8a59782337f68d40bf4bed2850b92a6ad07160a95",
+    "bytes": 694426,
+    "format": "png"
+  },
+  "pipeline": {
+    "scaleMode": "uniform (width-derived, height follows)",
+    "positionMode": "geometric centring, equal transparent padding",
+    "coverage": 0.9,
+    "nsisCoverage": 0.94,
+    "resampling": "premultiplied-alpha area average, supersampled from >=512px",
+    "icoPngThreshold": 64,
+    "installerField": {
+      "colour": "#001050",
+      "reason": "NSIS Modern UI bitmaps require 24-bit BMP with no alpha channel. The flat field behind the logo is sampled from the logo's own deep-navy outline band, not invented."
+    }
+  },
+  "measurements": {
+    "canvas": {
+      "width": 961,
+      "height": 786
+    },
+    "aspectRatio": 1.222646,
+    "bbox": {
+      "minX": 0,
+      "minY": 0,
+      "maxX": 960,
+      "maxY": 785,
+      "width": 961,
+      "height": 786
+    },
+    "alpha": {
+      "clear": 319790,
+      "partial": 433438,
+      "opaque": 2118,
+      "clearPct": 42.3369,
+      "partialPct": 57.3827,
+      "opaquePct": 0.2804
+    },
+    "centroid": {
+      "x": 521.36,
+      "y": 489.22
+    }
+  },
+  "assets": {
+    "png": [
+      {
+        "file": "assets/generated/png/icon-16.png",
+        "width": 16,
+        "height": 16,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 695,
+        "artworkSize": [
+          14.40625,
+          11.78125
+        ],
+        "aspectErrorPct": 0.0135,
+        "offsetX": 0.78,
+        "offsetY": 2.09
+      },
+      {
+        "file": "assets/generated/png/icon-20.png",
+        "width": 20,
+        "height": 20,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 954,
+        "artworkSize": [
+          18,
+          14.73076923076923
+        ],
+        "aspectErrorPct": 0.0584,
+        "offsetX": 1,
+        "offsetY": 2.62
+      },
+      {
+        "file": "assets/generated/png/icon-24.png",
+        "width": 24,
+        "height": 24,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 1200,
+        "artworkSize": [
+          21.59090909090909,
+          17.681818181818183
+        ],
+        "aspectErrorPct": 0.1281,
+        "offsetX": 1.18,
+        "offsetY": 3.14
+      },
+      {
+        "file": "assets/generated/png/icon-32.png",
+        "width": 32,
+        "height": 32,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 1908,
+        "artworkSize": [
+          28.8125,
+          23.5625
+        ],
+        "aspectErrorPct": 0.0135,
+        "offsetX": 1.56,
+        "offsetY": 4.19
+      },
+      {
+        "file": "assets/generated/png/icon-40.png",
+        "width": 40,
+        "height": 40,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 2669,
+        "artworkSize": [
+          36,
+          29.46153846153846
+        ],
+        "aspectErrorPct": 0.0584,
+        "offsetX": 2,
+        "offsetY": 5.23
+      },
+      {
+        "file": "assets/generated/png/icon-48.png",
+        "width": 48,
+        "height": 48,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 3636,
+        "artworkSize": [
+          43.18181818181818,
+          35.36363636363637
+        ],
+        "aspectErrorPct": 0.1281,
+        "offsetX": 2.36,
+        "offsetY": 6.27
+      },
+      {
+        "file": "assets/generated/png/icon-64.png",
+        "width": 64,
+        "height": 64,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 5730,
+        "artworkSize": [
+          57.625,
+          47.125
+        ],
+        "aspectErrorPct": 0.0135,
+        "offsetX": 3.13,
+        "offsetY": 8.38
+      },
+      {
+        "file": "assets/generated/png/icon-96.png",
+        "width": 96,
+        "height": 96,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 10853,
+        "artworkSize": [
+          86.33333333333333,
+          70.66666666666667
+        ],
+        "aspectErrorPct": 0.0776,
+        "offsetX": 4.83,
+        "offsetY": 12.67
+      },
+      {
+        "file": "assets/generated/png/icon-128.png",
+        "width": 128,
+        "height": 128,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 17478,
+        "artworkSize": [
+          115.25,
+          94.25
+        ],
+        "aspectErrorPct": 0.0135,
+        "offsetX": 6.25,
+        "offsetY": 16.75
+      },
+      {
+        "file": "assets/generated/png/icon-256.png",
+        "width": 256,
+        "height": 256,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 55884,
+        "artworkSize": [
+          230.5,
+          188.5
+        ],
+        "aspectErrorPct": 0.0135,
+        "offsetX": 12.5,
+        "offsetY": 33.5
+      },
+      {
+        "file": "assets/generated/png/icon-512.png",
+        "width": 512,
+        "height": 512,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 181710,
+        "artworkSize": [
+          461,
+          377
+        ],
+        "aspectErrorPct": 0.0135,
+        "offsetX": 25,
+        "offsetY": 67
+      },
+      {
+        "file": "assets/generated/png/icon-1024.png",
+        "width": 1024,
+        "height": 1024,
+        "format": "png",
+        "hasAlpha": true,
+        "bytes": 599160,
+        "artworkSize": [
+          922,
+          754
+        ],
+        "aspectErrorPct": 0.0135,
+        "offsetX": 51,
+        "offsetY": 135
+      }
+    ],
+    "ico": {
+      "file": "assets/generated/icon.ico",
+      "format": "ico",
+      "sizes": [
+        16,
+        20,
+        24,
+        32,
+        40,
+        48,
+        64,
+        96,
+        128,
+        256
+      ],
+      "entries": 10,
+      "bytes": 137124
+    },
+    "bmp": [
+      {
+        "file": "assets/generated/installerSidebar.bmp",
+        "width": 164,
+        "height": 314,
+        "format": "bmp",
+        "bitCount": 24,
+        "hasAlpha": false,
+        "bytes": 154542,
+        "artworkSize": [
+          154,
+          126
+        ],
+        "aspectErrorPct": 0.0347,
+        "background": "#001050"
+      },
+      {
+        "file": "assets/generated/uninstallerSidebar.bmp",
+        "width": 164,
+        "height": 314,
+        "format": "bmp",
+        "bitCount": 24,
+        "hasAlpha": false,
+        "bytes": 154542,
+        "artworkSize": [
+          154,
+          126
+        ],
+        "aspectErrorPct": 0.0347,
+        "background": "#001050"
+      },
+      {
+        "file": "assets/generated/installerHeader.bmp",
+        "width": 150,
+        "height": 57,
+        "format": "bmp",
+        "bitCount": 24,
+        "hasAlpha": false,
+        "bytes": 25818,
+        "artworkSize": [
+          65,
+          53
+        ],
+        "aspectErrorPct": 0.3082,
+        "background": "#001050"
+      }
+    ]
+  }
+}

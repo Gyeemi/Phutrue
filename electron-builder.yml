@@ -1,0 +1,77 @@
+# Phutrue — electron-builder configuration
+#
+# Target: Windows x64, NSIS .exe installer.
+#
+# Every path under assets/generated/ is produced by `npm run assets` from
+# assets/brand/phutrue-logo.png. Do not edit those files by hand.
+
+appId: com.barailyinovex.phutrue
+productName: Phutrue
+copyright: Copyright © 2026 Baraily Inovex
+
+directories:
+  output: dist
+  buildResources: assets/generated
+
+# The multi-resolution .ico carries every size Windows asks for, from 16px in
+# the taskbar overflow to 256px in large-icon Explorer views and Add/Remove
+# Programs.
+icon: assets/generated/icon.ico
+
+files:
+  - src/**/*
+  - assets/generated/**/*
+  - package.json
+
+extraResources:
+  # The renderer loads icons at runtime, so the generated assets ship as
+  # resources rather than being bundled into the asar.
+  - from: assets/generated
+    to: assets/generated
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/generated/icon.ico
+  # Code signing is not configured yet. Once an Authenticode certificate
+  # exists, set it under signtoolOptions (electron-builder 26 moved these keys
+  # off `win` itself):
+  #
+  #   signtoolOptions:
+  #     certificateFile: build/cert.pfx
+  #     certificatePassword: ${env.CSC_KEY_PASSWORD}
+  #     publisherName: Baraily Inovex
+  #
+  # Until then Windows shows SmartScreen warnings on first run. See
+  # docs/branding.md for why this is a real limitation and not a bug.
+
+nsis:
+  # An assisted (wizard) installer, because that is the only mode in which
+  # NSIS renders installerHeader and installerSidebar at all.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+
+  # Branding artwork. All three are 24-bit BMP with no alpha channel, which is
+  # an NSIS Modern UI requirement, not a choice — see docs/branding.md.
+  installerIcon: assets/generated/icon.ico
+  uninstallerIcon: assets/generated/icon.ico
+  installerSidebar: assets/generated/installerSidebar.bmp
+  uninstallerSidebar: assets/generated/uninstallerSidebar.bmp
+  installerHeader: assets/generated/installerHeader.bmp
+
+  # installerHeaderIcon only applies to one-click installers, so it is
+  # intentionally omitted.
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Phutrue
+
+  # The updater must not delete user data. Settings, accounts and the mail
+  # store live in %APPDATA%\Phutrue, outside the install directory, so the
+  # uninstaller asks before removing them rather than assuming.
+  deleteAppDataOnUninstall: false
+
+  uninstallDisplayName: Phutrue

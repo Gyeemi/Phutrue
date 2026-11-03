@@ -1,0 +1,34 @@
+{
+  "name": "phutrue",
+  "productName": "Phutrue",
+  "version": "0.1.0",
+  "description": "Phutrue \u2014 a native Windows desktop email client by Baraily Inovex.",
+  "author": {
+    "name": "Baraily Inovex"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "homepage": "https://github.com/Gyeemi/Phutrue",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gyeemi/Phutrue.git"
+  },
+  "scripts": {
+    "assets": "node scripts/build-assets.mjs",
+    "assets:verify": "node scripts/verify-assets.mjs",
+    "check:paths": "node scripts/check-paths.mjs",
+    "assets:check": "npm run assets && npm run assets:verify && npm run check:paths",
+    "test": "npm run assets:verify && npm run check:paths",
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0",
+    "sharp": "0.35.5"
+  },
+  "main": "src/main/main.js",
+  "engines": {
+    "node": ">=20"
+  }
+}

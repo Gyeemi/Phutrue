@@ -95,7 +95,7 @@ npm start
 
 - A single window, 1280×860, centred.
 - The Phutrue logo, the wordmark "Phutrue", and "by Baraily Inovex".
-- A facts table: Version `0.1.0`, Electron `45.x`, Chromium `156.x`, Node `24.x`,
+- A facts table: Version `0.1.1`, Electron `45.x`, Chromium `156.x`, Node `24.x`,
   **Secure storage: available**, Theme `system`.
 - A "Run diagnostics" button at the bottom of the card.
 
@@ -246,7 +246,7 @@ npm run dist
 
 This runs the asset checks, the build, then `electron-builder --win --x64`.
 
-**Expected:** `release\Phutrue Setup 0.1.0.exe` (electron-builder's default
+**Expected:** `release\Phutrue-Setup-0.1.1-x64.exe` (electron-builder's default
 `artifactName`; if the name differs, use whatever appears in `release\`). Also
 `release\win-unpacked\Phutrue.exe`.
 
@@ -422,7 +422,7 @@ verified".
 
 ## 6. Install, launch, uninstall
 
-1. Run `release\Phutrue Setup 0.1.0.exe`.
+1. Run `release\Phutrue-Setup-0.1.1-x64.exe`.
 2. Expect the assisted installer: welcome page, install location, install,
    finish — with the Phutrue installer artwork.
 3. Install to the default location, launch from the finish page or the Start

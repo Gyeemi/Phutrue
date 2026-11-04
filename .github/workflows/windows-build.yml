@@ -300,7 +300,7 @@ jobs:
           | Commit | ``${{ github.sha }}`` |
           | Built and verified on | windows-latest, x64 |
           | Verified | the packaged app **and** the silently-installed app both rendered the account setup screen |
-          | Recovery verified | starts normally on a database left behind by a failed migration, setting it aside intact |
+          | Recovery verified | starts on a half-migrated database that already holds an account, completes the migration in place and keeps the account |
 
           ## Downloading it
 

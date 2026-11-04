@@ -210,7 +210,15 @@ jobs:
           git commit -m "release: Phutrue Windows installer ($hash) [skip ci]"
           # actions/checkout leaves a detached HEAD, so name the destination
           # explicitly; a bare `git push` has no upstream and fails.
-          git push origin "HEAD:${{ github.ref_name }}"
+          git push origin "HEAD:${{ github.ref_name }}" 2>&1 | Tee-Object -FilePath push.log
+          if ($LASTEXITCODE -ne 0) {
+            # Annotations are the one diagnostic channel readable remotely when
+            # artifacts and job logs are not.
+            $msg = ((Get-Content push.log -Raw) -replace "`r?`n", ' | ')
+            if ($msg.Length -gt 700) { $msg = $msg.Substring(0, 700) }
+            Write-Host "::error title=git push failed::$msg"
+            exit 1
+          }
 
       # Kept even on failure: a failed run is exactly when these matter.
       # On failure, publish the log to the branch itself.

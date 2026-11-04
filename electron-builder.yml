@@ -10,7 +10,7 @@ productName: Phutrue
 copyright: Copyright © 2026 Baraily Inovex
 
 directories:
-  output: dist
+  output: release
   buildResources: assets/generated
 
 # The multi-resolution .ico carries every size Windows asks for, from 16px in
@@ -19,13 +19,26 @@ directories:
 icon: assets/generated/icon.ico
 
 files:
-  - src/**/*
-  - assets/generated/**/*
+  # Only the build output ships. `src/` is excluded deliberately: the renderer
+  # must never be able to reason about, or reach, the main-process sources.
+  - dist/**/*
   - package.json
+  # Sourcemaps and their .map companions are development aids; keeping them out
+  # of the installer reduces size and avoids shipping readable internals.
+  - '!dist/**/*.map'
 
+# The renderer is served over the app:// protocol by reading files from disk.
+# Keeping it outside the asar archive means those reads hit ordinary files, so
+# the file handler cannot be caught out by archive-path edge cases that this
+# environment has no way to test. The renderer bundle is not a secret anyway —
+# it ships to every user.
+asar: true
+asarUnpack:
+  - dist/renderer/**
+
+# The window icon is read from disk at runtime, so the generated PNGs ship as
+# resources beside the asar rather than being bundled inside it.
 extraResources:
-  # The renderer loads icons at runtime, so the generated assets ship as
-  # resources rather than being bundled into the asar.
   - from: assets/generated
     to: assets/generated
 

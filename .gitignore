@@ -18,3 +18,4 @@ Thumbs.db
 # Local environment
 .env
 .env.local
+release/

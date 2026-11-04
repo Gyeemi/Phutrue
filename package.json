@@ -14,21 +14,44 @@
     "url": "https://github.com/Gyeemi/Phutrue.git"
   },
   "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "npm run typecheck && npm run test && npm run assets:check",
     "assets": "node scripts/build-assets.mjs",
     "assets:verify": "node scripts/verify-assets.mjs",
     "check:paths": "node scripts/check-paths.mjs",
     "assets:check": "npm run assets && npm run assets:verify && npm run check:paths",
-    "test": "npm run assets:verify && npm run check:paths",
-    "start": "electron .",
-    "dist": "electron-builder --win --x64"
+    "start": "npm run build && electron .",
+    "dist": "npm run assets:check && npm run build && electron-builder --win --x64"
   },
   "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/nodemailer": "8.0.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/sanitize-html": "2.16.2",
     "electron": "45.2.1",
     "electron-builder": "26.18.0",
-    "sharp": "0.35.5"
+    "esbuild": "0.28.2",
+    "jsdom": "27.0.1",
+    "sharp": "0.35.5",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
   },
-  "main": "src/main/main.js",
+  "main": "dist/main/index.js",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "imapflow": "2.10.0",
+    "mailparser": "3.14.1",
+    "nodemailer": "10.3.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "sanitize-html": "2.18.1",
+    "zod": "4.6.7"
   }
 }

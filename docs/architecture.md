@@ -325,7 +325,7 @@ them yet:
 
 | File | Tests | Covers |
 | --- | --- | --- |
-| `test/database.test.ts` | 27 | schema, migrations, transactions, WAL, FTS triggers, integrity |
+| `test/database.test.ts` | 26 | schema, migrations, transactions, WAL, FTS triggers, integrity |
 | `test/repos.test.ts` | 25 | repository behaviour, FTS operator injection, pagination, UIDVALIDITY reset, draft round-trip |
 | `test/ipc-validation.test.ts` | 41 | every channel has a schema and vice versa; bounds; cross-field account rules |
 | `test/ipc-router.test.ts` | 18 | allowlist, sender authorization, validation, error and log hygiene |

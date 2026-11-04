@@ -101,7 +101,7 @@ async function settle(rounds = 6): Promise<void> {
 }
 
 const INFO = {
-  version: '0.1.0',
+  version: '0.1.1',
   electron: '45.2.1',
   chrome: '156.0.8078.75',
   node: '24.22.1',
@@ -200,7 +200,7 @@ describe.skipIf(!built)('the shipped bundle renders the whole boot screen', () =
     await openAbout();
 
     const text = document.body.textContent ?? '';
-    expect(text).toContain('0.1.0');
+    expect(text).toContain('0.1.1');
     expect(text).toContain('45.2.1');
     expect(text).toContain('156.0.8078.75');
     expect(text).toContain('available');

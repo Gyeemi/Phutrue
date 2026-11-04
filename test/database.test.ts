@@ -212,7 +212,7 @@ describe('full-text search', () => {
  * version and the path but not the cause, so nothing could be concluded from it.
  * ------------------------------------------------------------------ */
 
-import { mkdtempSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -222,56 +222,125 @@ const tmpDb = (): { dir: string; file: string } => {
   return { dir, file: path.join(dir, 'phutrue.db') };
 };
 
-describe('a database left by a failed migration', () => {
-  it('does not stop the application from starting', () => {
+describe('a database left half-migrated', () => {
+  /**
+   * The reported bug, in full.
+   *
+   * A user's third install failed with "table accounts already exists" while
+   * `schema_version` still said 0. That is a database where some of migration 1
+   * ran and the version was never recorded. Migrations used plain CREATE TABLE,
+   * so re-running them re-created an object that was already there and threw -
+   * every launch, forever.
+   */
+
+  it('finishes the migration in place, keeping the file and any data', () => {
     const { dir, file } = tmpDb();
     try {
-      // The exact surviving state: tables exist, schema_version is absent
-      // because the migration rolled back.
+      // Partially applied migration 1, with a row already in it: this is data a
+      // user would not want thrown away, and no version recorded.
+      const shell = new DatabaseSync(file);
+      shell.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        + 'label TEXT NOT NULL, email TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT \'\', '
+        + 'auth_kind TEXT NOT NULL, oauth_provider TEXT, imap_host TEXT NOT NULL, '
+        + 'imap_port INTEGER NOT NULL, imap_secure INTEGER NOT NULL DEFAULT 1, '
+        + 'smtp_host TEXT NOT NULL, smtp_port INTEGER NOT NULL, '
+        + 'smtp_secure INTEGER NOT NULL DEFAULT 1, smtp_user TEXT, '
+        + 'sync_state TEXT NOT NULL DEFAULT \'idle\', last_error TEXT, '
+        + 'last_synced_at INTEGER, created_at INTEGER NOT NULL)');
+      shell.exec("INSERT INTO accounts (label, email, auth_kind, imap_host, imap_port, "
+        + "smtp_host, smtp_port, created_at) VALUES ('Old', 'old@example.com', 'password', "
+        + "'imap.example.com', 993, 'smtp.example.com', 587, 1)");
+      shell.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+      shell.exec('INSERT INTO schema_version (version) VALUES (0)');
+      shell.close();
+
+      let moved = '';
+      const db = openDatabase(file, { onQuarantine: (to) => { moved = to; } });
+
+      // The row survived: the fix completes the schema rather than starting over.
+      expect(db.prepare('SELECT email FROM accounts').get()).toEqual({
+        email: 'old@example.com',
+      });
+      // And the schema is now complete and versioned.
+      expect(db.prepare('SELECT MAX(version) AS v FROM schema_version').get()).toEqual({
+        v: MIGRATIONS[MIGRATIONS.length - 1]!.version,
+      });
+      expect(db.prepare('SELECT COUNT(*) AS n FROM messages').get()).toEqual({ n: 0 });
+      db.close();
+
+      // Nothing was moved aside, because nothing had to be.
+      expect(moved).toBe('');
+      expect(readdirSync(dir).some((f) => f.includes('unusable'))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('runs every migration twice without error', () => {
+    // The property that makes recovery possible at all. If this ever regresses,
+    // a half-applied migration becomes fatal again.
+    const db = openDatabase(':memory:');
+    expect(() => migrate(db)).not.toThrow();
+    expect(() => migrate(db)).not.toThrow();
+    db.close();
+  });
+
+  it('accepts a database that has every table but no version row', () => {
+    const { dir, file } = tmpDb();
+    try {
+      // Schema complete, version marker lost: an interrupted UPDATE, or a file
+      // restored from a partial backup.
       const shell = new DatabaseSync(file);
       shell.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+      shell.exec('CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT)');
       shell.close();
 
       const db = openDatabase(file);
-      expect(db.prepare('SELECT COUNT(*) AS n FROM accounts').get()).toEqual({ n: 0 });
+      expect(db.prepare('SELECT MAX(version) AS v FROM schema_version').get()).toEqual({
+        v: MIGRATIONS[MIGRATIONS.length - 1]!.version,
+      });
       db.close();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+});
 
-  it('keeps the unusable file instead of deleting it', () => {
+describe('a version marker that was lost', () => {
+  it('re-migrates over a complete schema without touching the data', () => {
+    /*
+     * The reported failure, stated as a property: a database whose schema is
+     * up to date but whose version was never recorded - an interrupted UPDATE,
+     * a file restored from a partial backup, a copy taken mid-write - must still
+     * start, and must still have its rows.
+     *
+     * Migrations used to be written as plain CREATE TABLE, so this threw "table
+     * accounts already exists" on every launch. Making the DDL idempotent is
+     * what fixes it; this test is what stops that regressing.
+     */
     const { dir, file } = tmpDb();
     try {
-      const shell = new DatabaseSync(file);
-      shell.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
-      shell.close();
+      const first = openDatabase(file);
+      first
+        .prepare(
+          `INSERT INTO accounts (label, email, auth_kind, imap_host, imap_port,
+             smtp_host, smtp_port, created_at)
+           VALUES ('Work', 'work@example.com', 'password', 'imap.example.com', 993,
+             'smtp.example.com', 587, 1)`
+        )
+        .run();
+      // Simulate the lost marker while the schema itself stays intact.
+      first.prepare('UPDATE schema_version SET version = 0').run();
+      first.close();
 
-      let movedTo = '';
-      const db = openDatabase(file, { onQuarantine: (to) => { movedTo = to; } });
-      db.close();
-
-      expect(movedTo).not.toBe('');
-      expect(existsSync(movedTo)).toBe(true);
-      expect(readdirSync(dir).some((f) => f.includes('unusable'))).toBe(true);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  });
-
-  it('reports where the old file went, so the user can find it', () => {
-    const { dir, file } = tmpDb();
-    try {
-      const shell = new DatabaseSync(file);
-      shell.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
-      shell.close();
-
-      const seen: string[] = [];
-      const db = openDatabase(file, { onQuarantine: (to) => seen.push(to) });
-      db.close();
-
-      expect(seen).toHaveLength(1);
-      expect(seen[0]).toContain('unusable');
+      const second = openDatabase(file);
+      expect(second.prepare('SELECT email FROM accounts').get()).toEqual({
+        email: 'work@example.com',
+      });
+      expect(second.prepare('SELECT MAX(version) AS v FROM schema_version').get()).toEqual({
+        v: MIGRATIONS[MIGRATIONS.length - 1]!.version,
+      });
+      second.close();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -356,9 +425,10 @@ describe('the failure message names the cause', () => {
         message = (err as Error).message;
       }
 
-      expect(message).toMatch(/already exists/);
-      // And the version, so the log says where it stopped.
-      expect(message).toMatch(/version 1/);
+      // The message names the actual problem - a table whose columns do not
+      // match - rather than a raw "table already exists" from a CREATE.
+      expect(message).toMatch(/does not match the expected schema|missing/i);
+      expect(message).toMatch(/accounts|secrets/);
       rmSync(dir, { recursive: true, force: true });
     } catch (outer) {
       throw outer;
@@ -381,6 +451,62 @@ describe('the failure message names the cause', () => {
       expect(check.prepare('SELECT ref FROM secrets').get()).toEqual({ ref: 'keep-me' });
       check.close();
       expect(readdirSync(dir).some((f) => f.includes('unusable'))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('a table that exists with the wrong shape', () => {
+  it('is replaced when it is empty, so the app ends up correct', () => {
+    const { dir, file } = tmpDb();
+    try {
+      // IF NOT EXISTS skips an existing table, so a truncated `accounts` would
+      // otherwise slip through and fail on the first query instead of at start.
+      const shell = new DatabaseSync(file);
+      shell.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT)');
+      shell.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+      shell.exec('INSERT INTO schema_version (version) VALUES (0)');
+      shell.close();
+
+      let moved = '';
+      const db = openDatabase(file, { onQuarantine: (to) => { moved = to; } });
+
+      // The wrong table is gone and the right one is there.
+      const cols = (db.prepare('PRAGMA table_info(accounts)').all() as { name: string }[]).map(
+        (c) => c.name
+      );
+      expect(cols).toContain('sync_state');
+      expect(cols).toContain('imap_host');
+      db.close();
+
+      // Nothing was deleted: the old file is on disk under another name.
+      expect(moved).toContain('unusable');
+      expect(readdirSync(dir).some((f) => f.includes('unusable'))).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('is refused when the table holds rows', () => {
+    const { dir, file } = tmpDb();
+    try {
+      const shell = new DatabaseSync(file);
+      shell.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT)');
+      shell.exec("INSERT INTO accounts (email) VALUES ('keep@example.com')");
+      shell.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+      shell.exec('INSERT INTO schema_version (version) VALUES (0)');
+      shell.close();
+
+      // A row exists, so the file is not ours to replace. The message must say
+      // that rather than quietly discarding an account.
+      expect(() => openDatabase(file)).toThrow(/left untouched/i);
+
+      const check = new DatabaseSync(file, { readOnly: true });
+      expect(check.prepare('SELECT email FROM accounts').get()).toEqual({
+        email: 'keep@example.com',
+      });
+      check.close();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

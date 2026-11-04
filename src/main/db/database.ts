@@ -132,22 +132,115 @@ export function openDatabase(
  * `schema_version` alone would not notice, and the user would meet the problem
  * as a crash on the first query instead of a clear message at start-up.
  */
-const REQUIRED_TABLES = [
-  'accounts', 'secrets', 'folders', 'messages', 'attachments',
-  'drafts', 'outbox', 'settings', 'schema_version',
-] as const;
+/**
+ * Every table, index and trigger the migrations are supposed to create.
+ *
+ * Derived from the migration functions themselves by running them against a
+ * throwaway in-memory database, so it can never disagree with them.
+ */
+let expectedCache: string[] | null = null;
+export function expectedObjects(): string[] {
+  if (expectedCache) return expectedCache;
+  const scratch = new DatabaseSync(':memory:');
+  try {
+    scratch.exec('PRAGMA foreign_keys = ON');
+    for (const m of MIGRATIONS) m.up(scratch);
+    expectedCache = (
+      scratch
+        .prepare("SELECT name FROM sqlite_master WHERE type IN ('table','index','trigger')")
+        .all() as { name: string }[]
+    )
+      .map((r) => r.name)
+      .filter((n) => !n.startsWith('sqlite_'))
+      .sort();
+    return expectedCache;
+  } finally {
+    scratch.close();
+  }
+}
+
+/**
+ * Expected column names for each table, derived from the migrations.
+ *
+ * Cached because this builds a throwaway database, and it is only ever used to
+ * compare against a schema that was already created.
+ */
+let columnCache: Record<string, string[]> | null = null;
+export function expectedColumns(): Record<string, string[]> {
+  if (columnCache) return columnCache;
+  const scratch = new DatabaseSync(':memory:');
+  try {
+    scratch.exec('PRAGMA foreign_keys = ON');
+    for (const m of MIGRATIONS) m.up(scratch);
+    const tables = (
+      scratch
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .all() as { name: string }[]
+    )
+      .map((t) => t.name)
+      // Virtual tables are backed by shadow tables with generated columns;
+      // their shape is FTS5's business, not ours to assert.
+      .filter((n) => !n.includes('_fts'));
+
+    const out: Record<string, string[]> = {};
+    for (const t of tables) {
+      out[t] = (scratch.prepare(`PRAGMA table_info(${t})`).all() as { name: string }[]).map(
+        (c) => c.name
+      );
+    }
+    columnCache = out;
+    return out;
+  } finally {
+    scratch.close();
+  }
+}
 
 export function verifySchema(db: Db): void {
   const rows = db
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+    .prepare("SELECT name FROM sqlite_master WHERE type IN ('table','index','trigger')")
     .all() as { name: string }[];
   const present = new Set(rows.map((r) => r.name));
 
-  const missing = REQUIRED_TABLES.filter((t) => !present.has(t));
+  /*
+   * Compare against what the migrations themselves declare, not a hand-written
+   * list.
+   *
+   * A list is a second place to forget something: it silently passes a database
+   * that is missing a table nobody listed, and Drift between the list and the
+   * migrations is invisible until a user's data is gone. Reading the DDL means
+   * this check cannot fall behind the schema it is checking.
+   */
+  const expected = expectedObjects();
+  const missing = expected.filter((name) => !present.has(name));
   if (missing.length > 0) {
     throw new AppError(
       ErrorCodes.DB_ERROR,
       `The local database is incomplete: missing ${missing.join(', ')}.`
+    );
+  }
+
+  /*
+   * Names are not enough.
+   *
+   * Because migrations now use IF NOT EXISTS, an existing table with the wrong
+   * columns is skipped rather than replaced - so a truncated `accounts` from a
+   * half-written file would pass a name check and then fail much later, when the
+   * first query ran. Comparing column lists turns that into a clear message at
+   * start-up instead.
+   */
+  const shape = expectedColumns();
+  const wrong: string[] = [];
+  for (const [table, columns] of Object.entries(shape)) {
+    const actual = (
+      db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+    ).map((c) => c.name);
+    const absent = columns.filter((c) => !actual.includes(c));
+    if (absent.length > 0) wrong.push(`${table} is missing ${absent.join(', ')}`);
+  }
+  if (wrong.length > 0) {
+    throw new AppError(
+      ErrorCodes.DB_ERROR,
+      `The local database does not match the expected schema: ${wrong.join('; ')}.`
     );
   }
 
@@ -214,17 +307,32 @@ function quarantine(file: string): string {
   return target;
 }
 
-/** Current schema version, or 0 for a fresh database. */
+/**
+ * Current schema version, or 0 for a database that has never been migrated.
+ *
+ * Read in a way that cannot quietly report 0 for a database that is actually up
+ * to date: a missing marker means "not migrated", a marker with no row means the
+ * same, and anything unparseable is treated as 0 so the migrations re-run. Since
+ * every migration is idempotent, re-running is safe - and it is much safer than
+ * believing a version that is not there.
+ */
 function schemaVersion(db: Db): number {
   db.exec('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)');
-  const row = db.prepare('SELECT version FROM schema_version LIMIT 1').get() as
-    | { version: number }
-    | undefined;
-  if (!row) {
+
+  const rows = db.prepare('SELECT version FROM schema_version').all() as {
+    version: number | null;
+  }[];
+  if (rows.length === 0) {
     db.prepare('INSERT INTO schema_version (version) VALUES (0)').run();
     return 0;
   }
-  return row.version;
+
+  const values = rows.map((r) => Number(r.version)).filter((n) => Number.isInteger(n) && n >= 0);
+  if (values.length === 0) return 0;
+
+  // MAX, not the first row: several rows can exist if an insert raced, and the
+  // highest is the only safe answer.
+  return Math.max(...values);
 }
 
 /**

@@ -23,7 +23,7 @@ export const MIGRATIONS: Migration[] = [
     up(db) {
       /* ---- accounts ------------------------------------------- */
       db.exec(`
-        CREATE TABLE accounts (
+        CREATE TABLE IF NOT EXISTS accounts (
           id             INTEGER PRIMARY KEY AUTOINCREMENT,
           label          TEXT    NOT NULL,
           email          TEXT    NOT NULL,
@@ -44,13 +44,13 @@ export const MIGRATIONS: Migration[] = [
           created_at     INTEGER NOT NULL
         );
       `);
-      db.exec('CREATE UNIQUE INDEX idx_accounts_email ON accounts(email)');
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_email ON accounts(email)');
 
       /* ---- secrets -------------------------------------------- */
       // Only DPAPI-wrapped ciphertext ever lands here. There is no plaintext
       // column, by design.
       db.exec(`
-        CREATE TABLE secrets (
+        CREATE TABLE IF NOT EXISTS secrets (
           ref        TEXT PRIMARY KEY,
           ciphertext BLOB    NOT NULL,
           updated_at INTEGER NOT NULL
@@ -59,7 +59,7 @@ export const MIGRATIONS: Migration[] = [
 
       /* ---- folders -------------------------------------------- */
       db.exec(`
-        CREATE TABLE folders (
+        CREATE TABLE IF NOT EXISTS folders (
           id           INTEGER PRIMARY KEY AUTOINCREMENT,
           account_id   INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
           path         TEXT    NOT NULL,
@@ -74,12 +74,12 @@ export const MIGRATIONS: Migration[] = [
           sort_order   INTEGER NOT NULL DEFAULT 0
         );
       `);
-      db.exec('CREATE UNIQUE INDEX idx_folders_account_path ON folders(account_id, path)');
-      db.exec('CREATE INDEX idx_folders_account ON folders(account_id, sort_order)');
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_folders_account_path ON folders(account_id, path)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_folders_account ON folders(account_id, sort_order)');
 
       /* ---- messages ------------------------------------------- */
       db.exec(`
-        CREATE TABLE messages (
+        CREATE TABLE IF NOT EXISTS messages (
           id              INTEGER PRIMARY KEY AUTOINCREMENT,
           account_id      INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
           folder_id       INTEGER NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
@@ -107,15 +107,15 @@ export const MIGRATIONS: Migration[] = [
       `);
       // One message per UID per folder — prevents duplicates from overlapping
       // sync runs.
-      db.exec('CREATE UNIQUE INDEX idx_messages_uid ON messages(folder_id, uid)');
-      db.exec('CREATE INDEX idx_messages_folder_date ON messages(folder_id, date DESC)');
-      db.exec('CREATE INDEX idx_messages_account ON messages(account_id)');
-      db.exec('CREATE INDEX idx_messages_unread ON messages(folder_id, is_read, date DESC)');
-      db.exec('CREATE INDEX idx_messages_msgid ON messages(message_id)');
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_uid ON messages(folder_id, uid)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_messages_folder_date ON messages(folder_id, date DESC)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_messages_account ON messages(account_id)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(folder_id, is_read, date DESC)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_messages_msgid ON messages(message_id)');
 
       /* ---- attachments ---------------------------------------- */
       db.exec(`
-        CREATE TABLE attachments (
+        CREATE TABLE IF NOT EXISTS attachments (
           id         INTEGER PRIMARY KEY AUTOINCREMENT,
           message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
           content_id TEXT,
@@ -126,11 +126,11 @@ export const MIGRATIONS: Migration[] = [
           is_inline  INTEGER NOT NULL DEFAULT 0
         );
       `);
-      db.exec('CREATE UNIQUE INDEX idx_attachments_unique ON attachments(message_id, filename, COALESCE(content_id, \'\'))');
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_attachments_unique ON attachments(message_id, filename, COALESCE(content_id, \'\'))');
 
       /* ---- drafts --------------------------------------------- */
       db.exec(`
-        CREATE TABLE drafts (
+        CREATE TABLE IF NOT EXISTS drafts (
           id         INTEGER PRIMARY KEY AUTOINCREMENT,
           account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
           folder_id  INTEGER REFERENCES folders(id) ON DELETE SET NULL,
@@ -145,13 +145,13 @@ export const MIGRATIONS: Migration[] = [
           updated_at INTEGER NOT NULL
         );
       `);
-      db.exec('CREATE INDEX idx_drafts_account ON drafts(account_id, updated_at DESC)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_drafts_account ON drafts(account_id, updated_at DESC)');
 
       /* ---- outbox --------------------------------------------- */
       // Durable send queue. A row exists until the SMTP server has accepted the
       // message, so a crash mid-send cannot lose or duplicate mail.
       db.exec(`
-        CREATE TABLE outbox (
+        CREATE TABLE IF NOT EXISTS outbox (
           id          INTEGER PRIMARY KEY AUTOINCREMENT,
           account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
           payload     TEXT NOT NULL,
@@ -161,11 +161,11 @@ export const MIGRATIONS: Migration[] = [
           sent_at     INTEGER
         );
       `);
-      db.exec('CREATE INDEX idx_outbox_pending ON outbox(account_id, sent_at)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_outbox_pending ON outbox(account_id, sent_at)');
 
       /* ---- settings ------------------------------------------- */
       db.exec(`
-        CREATE TABLE settings (
+        CREATE TABLE IF NOT EXISTS settings (
           key   TEXT PRIMARY KEY,
           value TEXT NOT NULL
         );
@@ -175,7 +175,7 @@ export const MIGRATIONS: Migration[] = [
       // External-content FTS5 over messages. Kept in sync by triggers so search
       // cannot drift from the table it indexes.
       db.exec(`
-        CREATE VIRTUAL TABLE messages_fts USING fts5(
+        CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
           subject, from_address, from_name, body_text,
           content='messages',
           content_rowid='id',
@@ -183,19 +183,19 @@ export const MIGRATIONS: Migration[] = [
         );
       `);
       db.exec(`
-        CREATE TRIGGER messages_ai AFTER INSERT ON messages BEGIN
+        CREATE TRIGGER IF NOT EXISTS messages_ai AFTER INSERT ON messages BEGIN
           INSERT INTO messages_fts(rowid, subject, from_address, from_name, body_text)
           VALUES (new.id, new.subject, new.from_address, new.from_name, COALESCE(new.body_text,''));
         END;
       `);
       db.exec(`
-        CREATE TRIGGER messages_ad AFTER DELETE ON messages BEGIN
+        CREATE TRIGGER IF NOT EXISTS messages_ad AFTER DELETE ON messages BEGIN
           INSERT INTO messages_fts(messages_fts, rowid, subject, from_address, from_name, body_text)
           VALUES ('delete', old.id, old.subject, old.from_address, old.from_name, COALESCE(old.body_text,''));
         END;
       `);
       db.exec(`
-        CREATE TRIGGER messages_au AFTER UPDATE ON messages BEGIN
+        CREATE TRIGGER IF NOT EXISTS messages_au AFTER UPDATE ON messages BEGIN
           INSERT INTO messages_fts(messages_fts, rowid, subject, from_address, from_name, body_text)
           VALUES ('delete', old.id, old.subject, old.from_address, old.from_name, COALESCE(old.body_text,''));
           INSERT INTO messages_fts(rowid, subject, from_address, from_name, body_text)
@@ -225,7 +225,7 @@ export const MIGRATIONS: Migration[] = [
        * reveals no token, even before DPAPI is considered.
        */
       db.exec(`
-        CREATE TABLE oauth_accounts (
+        CREATE TABLE IF NOT EXISTS oauth_accounts (
           account_id     INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
           provider       TEXT    NOT NULL CHECK (provider IN ('google','microsoft')),
           -- When the access token expires, epoch ms. Never a token.
@@ -244,7 +244,7 @@ export const MIGRATIONS: Migration[] = [
           updated_at     INTEGER NOT NULL
         );
       `);
-      db.exec('CREATE INDEX idx_oauth_accounts_subject ON oauth_accounts(provider, subject)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_oauth_accounts_subject ON oauth_accounts(provider, subject)');
 
       /*
        * Short-lived authorisation attempts.
@@ -261,7 +261,7 @@ export const MIGRATIONS: Migration[] = [
        * callback.
        */
       db.exec(`
-        CREATE TABLE oauth_pending (
+        CREATE TABLE IF NOT EXISTS oauth_pending (
           state_hash     TEXT PRIMARY KEY,
           provider       TEXT    NOT NULL CHECK (provider IN ('google','microsoft')),
           code_verifier  TEXT    NOT NULL,
@@ -272,7 +272,7 @@ export const MIGRATIONS: Migration[] = [
           expires_at     INTEGER NOT NULL
         );
       `);
-      db.exec('CREATE INDEX idx_oauth_pending_expiry ON oauth_pending(expires_at)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_oauth_pending_expiry ON oauth_pending(expires_at)');
     },
   },
 ];

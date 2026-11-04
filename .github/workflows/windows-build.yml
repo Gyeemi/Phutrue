@@ -138,27 +138,46 @@ jobs:
       # every later launch showed "could not start". No test that begins from an
       # empty directory can catch it, and the smoke test still passed because it
       # only ever looked at a window. So the poisoned state is reproduced here.
-      - name: Start on a database left behind by a failed migration
+      # The reported bug, reproduced exactly.
+      #
+      # A real install failed with "table accounts already exists" while
+      # schema_version still said 0: a half-applied migration, with a row already
+      # in the table, so the file could not simply be discarded. Migrations used
+      # plain CREATE TABLE, so they re-created an existing object and threw on
+      # every launch, forever. This step builds that database before launch.
+      - name: Start on a half-migrated database that already holds an account
         shell: pwsh
         run: |
           $userData = Join-Path $env:APPDATA 'Phutrue'
           New-Item -ItemType Directory -Force -Path $userData | Out-Null
-
           $dbPath = Join-Path $userData 'phutrue.db'
           Remove-Item -Force -ErrorAction SilentlyContinue $dbPath, "$dbPath-wal", "$dbPath-shm"
 
-          # Build the exact leftover state with headless SQLite: some tables, no
-          # schema_version, because the migration transaction rolled back.
           & node -e "
             const { DatabaseSync } = require('node:sqlite');
             const db = new DatabaseSync(process.argv[1]);
-            db.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
-            db.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT)');
-            db.exec('CREATE TABLE messages (id INTEGER PRIMARY KEY)');
+            db.exec('PRAGMA journal_mode = WAL');
+            // Accounts exists with a real row, so it must not be discarded.
+            db.exec(\`CREATE TABLE accounts (
+              id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT NOT NULL,
+              email TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '',
+              auth_kind TEXT NOT NULL, oauth_provider TEXT,
+              imap_host TEXT NOT NULL, imap_port INTEGER NOT NULL,
+              imap_secure INTEGER NOT NULL DEFAULT 1,
+              smtp_host TEXT NOT NULL, smtp_port INTEGER NOT NULL,
+              smtp_secure INTEGER NOT NULL DEFAULT 1, smtp_user TEXT,
+              sync_state TEXT NOT NULL DEFAULT 'idle', last_error TEXT,
+              last_synced_at INTEGER, created_at INTEGER NOT NULL)\`);
+            db.exec(\`INSERT INTO accounts (label, email, auth_kind, imap_host,
+              imap_port, smtp_host, smtp_port, created_at)
+              VALUES ('Existing', 'existing@example.com', 'password',
+                'imap.example.com', 993, 'smtp.example.com', 587, 1)\`);
+            db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+            db.exec('INSERT INTO schema_version (version) VALUES (0)');
             db.close();
           " $dbPath
-          if (-not (Test-Path $dbPath)) { throw 'Could not seed the poisoned database' }
-          Write-Host "Seeded a leftover database at $dbPath"
+          if (-not (Test-Path $dbPath)) { throw 'Could not seed the half-migrated database' }
+          Write-Host "Seeded a half-migrated database with one account at $dbPath"
 
           $app = Join-Path $PWD 'release\win-unpacked\Phutrue.exe'
           $report = Join-Path $PWD 'recovered-smoke-report.json'
@@ -167,25 +186,36 @@ jobs:
           $env:PHUTRUE_SMOKE_OUT = $report
 
           $proc = Start-Process -FilePath $app -PassThru -NoNewWindow
-          if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw 'Recovery smoke test timed out' }
+          if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw 'Half-migrated start-up timed out' }
           Write-Host "App exited with code $($proc.ExitCode)"
-
-          # Exit 0 with a report means it started, migrated and painted the screen.
           if ($proc.ExitCode -ne 0) {
-            throw "App failed to start on a leftover database (exit $($proc.ExitCode)). This is the reported bug."
+            throw "App failed to start on a half-migrated database (exit $($proc.ExitCode)). This is the reported bug."
           }
           if (-not (Test-Path $report)) { throw 'No smoke report after recovery' }
           Get-Content $report | Write-Host
           $json = Get-Content $report -Raw | ConvertFrom-Json
-          if (-not $json.ok) { throw "Recovery smoke FAILED: missing=$($json.missing -join ', ')" }
-          if ($json.schemaVersion -lt 1) { throw "Recovery smoke FAILED: schema v$($json.schemaVersion)" }
+          if (-not $json.ok) { throw "Half-migrated smoke FAILED: missing=$($json.missing -join ', ')" }
+          if ($json.schemaVersion -lt 1) { throw "Half-migrated smoke FAILED: schema v$($json.schemaVersion)" }
 
-          # The unusable file must be set aside, not deleted.
+          # The migration must have finished in place: no file set aside, because
+          # the half-applied schema can now be completed rather than replaced.
           $aside = Get-ChildItem -Path $userData -Filter 'phutrue.db.unusable-*' -ErrorAction SilentlyContinue
-          if (-not $aside) { throw 'The leftover database was deleted instead of being set aside' }
-          Write-Host "PASS: started normally and set the old file aside as $($aside.Name)"
+          if ($aside) { throw "The database was replaced instead of completed: $($aside.Name)" }
 
-          # Clean up so the install test starts from the same state a user would.
+          # And the account that was already there must still be there.
+          $count = & node -e "
+            const { DatabaseSync } = require('node:sqlite');
+            const db = new DatabaseSync(process.argv[1], { readOnly: true });
+            const r = db.prepare('SELECT COUNT(*) AS n, MAX(version) AS v FROM accounts, schema_version').get();
+            console.log(r.n + '|' + r.v);
+          " $dbPath
+          Write-Host "accounts|version = $count"
+          $parts = ($count -split '\|')
+          if ([int]$parts[0] -ne 1) { throw "Existing account was lost: found $($parts[0])" }
+          if ([int]$parts[1] -lt 1) { throw "Schema version was not recorded: $($parts[1])" }
+          Write-Host "PASS: migration completed in place, the existing account survived"
+
+          # Clean up so the install test starts from the state a user would have.
           Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $userData
 
       # The installer itself must be launchable and its payload must be intact.

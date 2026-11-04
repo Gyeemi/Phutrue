@@ -88,6 +88,16 @@ export function BootScreen({ variant, message, info, settings, onClose }: BootSc
                 <dd>{info.node}</dd>
               </div>
               <div>
+                <dt>Build</dt>
+                {/*
+                  The stamp identifies exactly which renderer files this window
+                  loaded. It is the first thing to check when the window looks
+                  wrong: a value that does not match dist/build-stamp.json means
+                  a stale install rather than a rendering fault.
+                */}
+                <dd className="boot__mono">{info.buildStamp}</dd>
+              </div>
+              <div>
                 <dt>Secure storage</dt>
                 <dd className={info.secureStorageAvailable ? 'is-ok' : 'is-warn'}>
                   {info.secureStorageAvailable ? 'available' : 'unavailable'}

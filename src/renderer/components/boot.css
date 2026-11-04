@@ -177,3 +177,9 @@
   background: var(--bg-hover);
   color: var(--text);
 }
+
+/* Values that must be compared character-by-character, such as the build stamp. */
+.boot__mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}

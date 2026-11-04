@@ -290,11 +290,29 @@ Launch the app (unpackaged with `npm start`, or the installed build).
 mail", a short paragraph, and two provider cards — **Gmail** and **Microsoft** —
 each with a short description and a **Sign in** button.
 
-**If instead you see only the logo and no text or styling**, stop and run the
-diagnostics (section 4). The `build.integrity` row will say whether `app.css` or
-`app.js` is missing from the installed tree. That is the single most useful
-piece of evidence for the open logo-only issue — please send that row's status
-and detail verbatim, along with the Console output from `Ctrl+Shift+I`.
+**If instead you see only the logo and no text or styling**, this is the open
+logo-only issue. Do these four things before anything else, because together they
+separate the remaining explanations:
+
+1. **Run the diagnostics** (section 4) and copy the `build.integrity` row
+   verbatim. If it fails, a renderer file is missing or empty in the installed
+   tree — that is a packaging fault, not a display fault, and reinstalling fixes
+   it.
+2. **Open DevTools** with `Ctrl+Shift+I`, reload with `Ctrl+R`, and send the
+   **Console** output. A CSP violation, a 404 on `app.css`, or a JavaScript
+   exception all appear here and look identical in the window.
+3. **In the Network tab**, send the **Status** and **Type** columns for
+   `index.html`, `app.js` and `app.css`. Expected: `200` and
+   `text/html` / `text/javascript` / `text/css`. A `415` means the handler refused
+   the file type; a `404` means it is not on disk.
+4. **Copy the stamp.** In the terminal, after the app is built:
+   `Get-Content .\dist\build-stamp.json`. Compare the `stamp` value with the
+   `build.integrity` detail shown in the app. If they differ, the running app is
+   **not** the build you just made — you are looking at a stale installed copy
+   (check `release\win-unpacked`, or uninstall the old version first).
+
+Those four answers identify which of these it is: missing files, wrong MIME type,
+a runtime exception, or a stale build. Please send all four.
 
 ### 5b.2 Sign-in cannot start without configuration
 

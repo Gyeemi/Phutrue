@@ -32,6 +32,8 @@ const INFO: AppInfo = {
   platform: 'win32',
   secureStorageAvailable: true,
   secureStorageReason: null,
+  buildStamp: 'abc123def456',
+  rendererPath: 'C:\\app\\dist\\renderer',
 };
 
 const SETTINGS: Settings = {
@@ -146,6 +148,13 @@ describe('successful boot', () => {
   it('is not blank', async () => {
     await render();
     expect((document.body.textContent ?? '').trim().length).toBeGreaterThan(20);
+  });
+
+  it('shows the build stamp, so a tester can tell a stale install from a fault', async () => {
+    await renderAbout();
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('abc123def456');
+    expect(text).toContain('Build');
   });
 });
 

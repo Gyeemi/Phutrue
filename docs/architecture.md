@@ -315,11 +315,11 @@ them yet:
 | `test/oauth-ipc.test.ts` | 22 | the five OAuth channels reject smuggled secrets, malformed handles and untrusted senders |
 | `test/signin-machine.test.ts` | 21 | single-flight, cancellation, and late events from dead attempts |
 | `test/account-screen.test.tsx` | 41 | provider selection, progress, waiting, cancel, success, failures, removal |
-| `test/entry-point.test.ts` | 26 | the packaged entry point, the retired branding page must throw, exactly one `app://` load, no `data:` navigation, startup diagnostics, readiness literals |
+| `test/entry-point.test.ts` | 28 | the packaged entry point, the retired branding page must throw, exactly one `app://` load, no `data:` navigation, startup diagnostics, readiness literals |
 
 | `test/smoke.test.ts` | 10 | the packaged-app self test's decision logic: wrong origin, unmounted renderer, missing screen text, load failures |
 
-Total: **542 tests in 19 files.**
+Total: **544 tests in 19 files.**
 
 ### 5.1 The OAuth flow, and why it is shaped this way
 

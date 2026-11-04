@@ -354,3 +354,28 @@ describe('the dist script cannot publish', () => {
     expect(dist.indexOf('build')).toBeLessThan(dist.indexOf('electron-builder'));
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * The installer must be deliverable
+ *
+ * GitHub rejects any file over 100 MB. With the default compression the NSIS
+ * installer was ~120 MB, so it built, verified and then could not be handed
+ * over - it was rejected by the remote during push. That is a delivery failure,
+ * not a build failure, and it deserves a test.
+ * ------------------------------------------------------------------ */
+
+describe('installer configuration', () => {
+  it('uses maximum compression, to stay under the 100 MB file limit', () => {
+    const config = read('electron-builder.yml');
+    expect(config).toMatch(/^compression:\s*maximum$/m);
+  });
+
+  it('names the artifact with its version and architecture', () => {
+    // A self-describing filename prevents a user installing a stale download.
+    const config = read('electron-builder.yml');
+    const line = /^artifactName:\s*(.+)$/m.exec(config)?.[1] ?? '';
+    expect(line).toContain('${version}');
+    expect(line).toContain('x64');
+    expect(line).toContain('.${ext}');
+  });
+});

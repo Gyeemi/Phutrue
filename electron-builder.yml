@@ -9,6 +9,15 @@ appId: com.barailyinovex.phutrue
 productName: Phutrue
 copyright: Copyright © 2026 Baraily Inovex
 
+# Maximum (LZMA) compression.
+#
+# Not cosmetic: with the default setting the NSIS installer is ~120 MB, which
+# exceeds GitHub's 100 MB per-file limit and therefore cannot be delivered
+# through a git branch. LZMA costs build time and makes the installer slightly
+# slower to unpack on first run; both are worth it for a file that actually
+# reaches the user.
+compression: maximum
+
 directories:
   output: release
   buildResources: assets/generated
@@ -41,6 +50,10 @@ asarUnpack:
 extraResources:
   - from: assets/generated
     to: assets/generated
+
+# A name with the version and architecture in it, so a downloaded file is
+# self-describing and two versions cannot be confused on disk.
+artifactName: Phutrue-Setup-${version}-x64.${ext}
 
 win:
   target:

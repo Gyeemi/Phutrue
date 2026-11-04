@@ -14,6 +14,33 @@ export type OAuthProvider = 'google' | 'microsoft';
 
 export type AccountSyncState = 'idle' | 'syncing' | 'offline' | 'error';
 
+/**
+ * State of an OAuth account's credential.
+ *
+ * `expired` is normal and recoverable — the refresh token is still valid and the
+ * next operation refreshes it. `revoked` means the user withdrew access at the
+ * provider and the account must be re-authorised.
+ */
+export type OAuthStatus = 'connected' | 'expired' | 'error' | 'revoked';
+
+/**
+ * What the renderer may know about an account's credentials.
+ *
+ * Deliberately contains no token, no expiry-in-epoch that could be used to infer
+ * one, and no scope string that might reveal more than the user expects. It
+ * answers one question: can this account be used right now?
+ */
+export interface OAuthAccountState {
+  provider: OAuthProvider;
+  status: OAuthStatus;
+  /** True when an access token is present and not past its refresh window. */
+  hasAccessToken: boolean;
+  /** True when a refresh token is stored, i.e. the account can renew itself. */
+  canRefresh: boolean;
+  /** Safe, displayable reason when status is 'error' or 'revoked'. */
+  lastError: string | null;
+}
+
 export interface Account {
   id: number;
   /** User-visible label, e.g. "Work" or the address itself. */

@@ -69,7 +69,22 @@ let services: Services | null = null;
 
 function buildServices(): Services {
   const file = databasePath();
-  const db = openDatabase(file);
+  const db = openDatabase(file, {
+    onQuarantine: (movedTo) => {
+      // Say so. An app that silently discards its database teaches users not to
+      // trust it with their mail.
+      dialog.showMessageBoxSync({
+        type: 'warning',
+        title: 'Phutrue',
+        message: 'A previous start-up did not finish',
+        detail:
+          'The settings database from an earlier run was unusable and has been ' +
+          `set aside so Phutrue can start.\n\nIt was moved to:\n${movedTo}\n\n` +
+          'No accounts or messages had been created yet.',
+        buttons: ['Continue'],
+      });
+    },
+  });
   const secrets = createSecretStore(db);
   return {
     db,
@@ -164,6 +179,11 @@ if (!gotLock) {
     } catch (err) {
       const detail =
         err instanceof AppError ? err.safeMessage : err instanceof Error ? err.message : String(err);
+      /*
+       * The detail IS the diagnosis. It previously said only "The local database
+       * could not be opened", which left a user with a dialog that named no
+       * cause - they had to report a screenshot and wait for an answer.
+       */
       dialog.showErrorBox(
         'Phutrue could not start',
         `The local database could not be opened.\n\n${detail}\n\nLocation: ${databasePath()}`
@@ -293,6 +313,32 @@ if (!gotLock) {
     mainWindow = createMainWindow({ trusted: trustedWindowIds });
 
     /*
+     * Prove the database is usable, not just openable.
+     *
+     * A build once shipped that could not start at all: the migration threw, the
+     * app showed an error dialog and quit - while the smoke test still passed,
+     * because that test only ever looked at a window. The window was correct; the
+     * application was not. So the smoke run now reads the schema before it looks
+     * at the screen, and a database that cannot be used fails the build.
+     */
+    let schemaVersion: number | null = null;
+    if (process.env['PHUTRUE_SMOKE'] === '1') {
+      try {
+        const v = svc.db
+          .prepare('SELECT MAX(version) AS v FROM schema_version')
+          .get() as { v: number | null };
+        if (!v.v || v.v < 1) throw new Error(`schema version is ${String(v.v)}`);
+        svc.db.prepare('SELECT COUNT(*) AS n FROM accounts').get();
+        schemaVersion = v.v;
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`SMOKE: database unusable: ${detail}\n`);
+        app.exit(90);
+        return;
+      }
+    }
+
+    /*
      * Packaged-app self test.
      *
      * Opt-in via PHUTRUE_SMOKE. It waits for the first paint, inspects the live
@@ -309,7 +355,7 @@ if (!gotLock) {
           void (async () => {
             const { inspectWindow, writeReport } = await import('./smoke.js');
             const failures = (win as unknown as { __loadFailures?: string[] }).__loadFailures ?? [];
-            const report = await inspectWindow(win, failures);
+            const report = await inspectWindow(win, failures, schemaVersion);
             const out = process.env['PHUTRUE_SMOKE_OUT'] ?? path.join(app.getPath('userData'), 'smoke.json');
             try {
               writeReport(report, out);

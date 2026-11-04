@@ -48,6 +48,12 @@ export interface SmokeReport {
   loadFailures: string[];
   /** Electron, Chromium and Node versions actually in use. */
   versions: { electron: string; chrome: string; node: string };
+  /**
+   * Schema version the running app reached, or null if the database was never
+   * consulted. Non-null is the difference between "a window appeared" and "the
+   * application can actually work".
+   */
+  schemaVersion: number | null;
   /** Process exit code the caller should use. */
   exitCode: number;
 }
@@ -60,7 +66,8 @@ export interface SmokeReport {
  */
 export async function inspectWindow(
   win: BrowserWindow,
-  loadFailures: readonly string[]
+  loadFailures: readonly string[],
+  schemaVersion: number | null = null
 ): Promise<SmokeReport> {
   const url = win.webContents.getURL();
 
@@ -100,6 +107,7 @@ export async function inspectWindow(
       chrome: process.versions['chrome'] ?? 'unknown',
       node: process.versions['node'] ?? 'unknown',
     },
+    schemaVersion,
     exitCode: ok ? 0 : 1,
   };
 }

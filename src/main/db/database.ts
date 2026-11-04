@@ -14,7 +14,7 @@
  */
 
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 
 import { AppError, ErrorCodes } from '../../shared/result.js';
@@ -27,11 +27,35 @@ export type Db = DatabaseSync;
  *
  * @param file Absolute path, or ':memory:' for tests.
  */
-export function openDatabase(file: string): Db {
-  if (file !== ':memory:') {
-    mkdirSync(path.dirname(file), { recursive: true });
+export function openDatabase(
+  file: string,
+  options: { onQuarantine?: (movedTo: string) => void } = {}
+): Db {
+  if (file === ':memory:') {
+    const mem = new DatabaseSync(file);
+    mem.exec('PRAGMA foreign_keys = ON');
+    migrate(mem);
+    return mem;
   }
 
+  mkdirSync(path.dirname(file), { recursive: true });
+
+  /*
+   * Recover from a database that a failed migration left behind.
+   *
+   * A migration runs inside a transaction, so the schema rolls back - but the
+   * FILE remains, and `schema_version` is still 0. On the next launch version 1
+   * runs again and, because it uses plain CREATE TABLE, collides with whatever
+   * survived. The result is an installation that cannot start, ever, with no
+   * in-app way out: the user would have to know to go and delete a file under
+   * AppData.
+   *
+   * The rule "never destroy user data" still applies, so this only takes the
+   * recovery path when the database provably holds nothing: no accounts, no
+   * messages, no drafts, and no outbox rows. If there is any mail or account in
+   * there, it is moved aside intact instead, and the error is raised with the
+   * reason - never silently discarded.
+   */
   const db = new DatabaseSync(file);
 
   // WAL keeps readers from blocking the writer during a long sync, and survives
@@ -48,8 +72,103 @@ export function openDatabase(file: string): Db {
   // Wait rather than fail immediately if another connection holds a lock.
   db.exec('PRAGMA busy_timeout = 5000');
 
-  migrate(db);
+  /*
+   * Migrate, and if that fails on a database that provably holds nothing, start
+   * over rather than leaving an installation that can never run again.
+   *
+   * This is the exact failure a first install hit: a migration rolled back, but
+   * its FILE stayed behind with partial schema, and every later launch failed
+   * the same way with no in-app route out. Recovering is only acceptable because
+   * `holdsNoUserData` has checked that there is nothing to lose - with real
+   * accounts or mail present, the error is raised and the file is left alone.
+   */
+  try {
+    migrate(db);
+  } catch (err) {
+    db.close();
+    if (!holdsNoUserData(file)) {
+      /*
+       * There is mail or an account in here, so nothing is moved or deleted.
+       * Say that plainly and give the user the one thing that resolves it,
+       * instead of leaving them with a raw SQLite string and no next step.
+       */
+      const cause = err instanceof AppError ? err.safeMessage : describeDbError(err);
+      throw new AppError(
+        ErrorCodes.DB_ERROR,
+        `Existing data was left untouched, but it could not be upgraded: ${cause}\n\n` +
+          `The file has not been changed. To start over, move this file out of ` +
+          `the way and reopen Phutrue:\n${file}`,
+        { cause: err }
+      );
+    }
+
+    const movedTo = quarantine(file);
+    // Reported rather than swallowed: a user whose file was set aside needs to
+    // know, and a support report needs the path.
+    options.onQuarantine?.(movedTo);
+
+    const fresh = new DatabaseSync(file);
+    if (file !== ':memory:') {
+      fresh.exec('PRAGMA journal_mode = WAL');
+      fresh.exec('PRAGMA synchronous = NORMAL');
+    }
+    fresh.exec('PRAGMA foreign_keys = ON');
+    fresh.exec('PRAGMA busy_timeout = 5000');
+    migrate(fresh);
+    return fresh;
+  }
   return db;
+}
+
+/**
+ * Does this database provably hold nothing a user would miss?
+ *
+ * Deliberately conservative: any unreadable state, and any table that cannot be
+ * inspected, counts as "has content". The only thing this may return true for is
+ * a database with no accounts, no messages, no drafts and no queued mail.
+ */
+function holdsNoUserData(file: string): boolean {
+  let probe: DatabaseSync | null = null;
+  try {
+    probe = new DatabaseSync(file, { readOnly: true });
+    const tables = (
+      probe.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]
+    ).map((t) => t.name);
+
+    for (const table of ['accounts', 'messages', 'drafts', 'outbox']) {
+      if (!tables.includes(table)) continue;
+      const row = probe.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number };
+      if (row.n > 0) return false;
+    }
+    // secrets without accounts can still be an encrypted credential worth keeping.
+    if (tables.includes('secrets')) {
+      const row = probe.prepare('SELECT COUNT(*) AS n FROM secrets').get() as { n: number };
+      if (row.n > 0) return false;
+    }
+    return true;
+  } catch {
+    // Cannot tell. Treat as precious.
+    return false;
+  } finally {
+    probe?.close();
+  }
+}
+
+/**
+ * Move an unusable database aside so the application can start.
+ *
+ * Renamed, never deleted: if this ever runs when it should not, the file is
+ * still in the same directory, and the new name is shown to the user.
+ */
+function quarantine(file: string): string {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const target = `${file}.unusable-${stamp}`;
+  renameSync(file, target);
+  // The WAL and shared-memory companions belong to the file that just moved.
+  for (const suffix of ['-wal', '-shm']) {
+    try { renameSync(file + suffix, target + suffix); } catch { /* not present */ }
+  }
+  return target;
 }
 
 /** Current schema version, or 0 for a fresh database. */
@@ -83,14 +202,41 @@ export function migrate(db: Db): void {
       db.exec('COMMIT');
       current = m.version;
     } catch (err) {
-      db.exec('ROLLBACK');
+      try { db.exec('ROLLBACK'); } catch { /* already rolled back */ }
+
+      /*
+       * The reason has to be in the message, not only in `cause`.
+       *
+       * This code previously reported "Database migration to version N failed."
+       * and nothing else. A user hit it on a fresh install: the dialog named the
+       * version and the file path but not the actual SQLite complaint, so the
+       * cause could not be determined from the app, only guessed at. SQLite's
+       * messages are safe to show - they carry no user data, only schema and
+       * file names - and without one this error is undiagnosable.
+       */
       throw new AppError(
         ErrorCodes.DB_ERROR,
-        `Database migration to version ${m.version} failed.`,
+        `Database migration to version ${m.version} (${m.name}) failed: ${describeDbError(err)}`,
         { cause: err }
       );
     }
   }
+}
+
+/**
+ * A one-line description of a failure raised by SQLite.
+ *
+ * Includes the status code, because `ERR_SQLITE_ERROR` alone does not
+ * distinguish "your database has an unexpected table" from "the disk is full" -
+ * and those need very different responses from a user.
+ */
+export function describeDbError(err: unknown): string {
+  if (err instanceof Error) {
+    const code = (err as { code?: unknown }).code;
+    const suffix = typeof code === 'string' && code !== '' ? ` [${code}]` : '';
+    return `${err.message}${suffix}`;
+  }
+  return String(err);
 }
 
 /** Wrap a set of statements in a transaction. Rolls back on any throw. */

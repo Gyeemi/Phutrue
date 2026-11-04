@@ -128,7 +128,65 @@ jobs:
           if (-not $json.ok) {
             throw "Smoke test FAILED: url=$($json.url) mounted=$($json.rendererMounted) missing=$($json.missing -join ', ')"
           }
-          Write-Host "PASS: window rendered $($json.url) with the account setup screen"
+          if ($null -eq $json.schemaVersion -or $json.schemaVersion -lt 1) {
+            throw "Smoke test FAILED: database schema version was $($json.schemaVersion)"
+          }
+          Write-Host "PASS: window rendered $($json.url) with the account setup screen, schema v$($json.schemaVersion)"
+
+      # This is the failure a user actually hit on first install: an earlier
+      # attempt left a phutrue.db behind, the migration could not complete, and
+      # every later launch showed "could not start". No test that begins from an
+      # empty directory can catch it, and the smoke test still passed because it
+      # only ever looked at a window. So the poisoned state is reproduced here.
+      - name: Start on a database left behind by a failed migration
+        shell: pwsh
+        run: |
+          $userData = Join-Path $env:APPDATA 'Phutrue'
+          New-Item -ItemType Directory -Force -Path $userData | Out-Null
+
+          $dbPath = Join-Path $userData 'phutrue.db'
+          Remove-Item -Force -ErrorAction SilentlyContinue $dbPath, "$dbPath-wal", "$dbPath-shm"
+
+          # Build the exact leftover state with headless SQLite: some tables, no
+          # schema_version, because the migration transaction rolled back.
+          & node -e "
+            const { DatabaseSync } = require('node:sqlite');
+            const db = new DatabaseSync(process.argv[1]);
+            db.exec('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+            db.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT)');
+            db.exec('CREATE TABLE messages (id INTEGER PRIMARY KEY)');
+            db.close();
+          " $dbPath
+          if (-not (Test-Path $dbPath)) { throw 'Could not seed the poisoned database' }
+          Write-Host "Seeded a leftover database at $dbPath"
+
+          $app = Join-Path $PWD 'release\win-unpacked\Phutrue.exe'
+          $report = Join-Path $PWD 'recovered-smoke-report.json'
+          Remove-Item -Force -ErrorAction SilentlyContinue $report
+          $env:PHUTRUE_SMOKE = '1'
+          $env:PHUTRUE_SMOKE_OUT = $report
+
+          $proc = Start-Process -FilePath $app -PassThru -NoNewWindow
+          if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw 'Recovery smoke test timed out' }
+          Write-Host "App exited with code $($proc.ExitCode)"
+
+          # Exit 0 with a report means it started, migrated and painted the screen.
+          if ($proc.ExitCode -ne 0) {
+            throw "App failed to start on a leftover database (exit $($proc.ExitCode)). This is the reported bug."
+          }
+          if (-not (Test-Path $report)) { throw 'No smoke report after recovery' }
+          Get-Content $report | Write-Host
+          $json = Get-Content $report -Raw | ConvertFrom-Json
+          if (-not $json.ok) { throw "Recovery smoke FAILED: missing=$($json.missing -join ', ')" }
+          if ($json.schemaVersion -lt 1) { throw "Recovery smoke FAILED: schema v$($json.schemaVersion)" }
+
+          # The unusable file must be set aside, not deleted.
+          $aside = Get-ChildItem -Path $userData -Filter 'phutrue.db.unusable-*' -ErrorAction SilentlyContinue
+          if (-not $aside) { throw 'The leftover database was deleted instead of being set aside' }
+          Write-Host "PASS: started normally and set the old file aside as $($aside.Name)"
+
+          # Clean up so the install test starts from the same state a user would.
+          Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $userData
 
       # The installer itself must be launchable and its payload must be intact.
       # A full silent install is worth doing here: it is the only way to know the

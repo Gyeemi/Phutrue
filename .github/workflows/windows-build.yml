@@ -25,9 +25,11 @@ on:
       - arena/a2f9f412-phutrue
   workflow_dispatch:
 
-# Read-only: this never pushes, publishes or comments.
+# Write access is needed for exactly one thing: on failure, the log is committed
+# to the branch so it can be read from anywhere. Nothing else is ever pushed, and
+# the commit is marked [skip ci] so it cannot start another run.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -158,27 +160,40 @@ jobs:
           retention-days: 14
 
       # Kept even on failure: a failed run is exactly when these matter.
-      # Captures the full log of a failed step as an artifact, because the API's
-      # log endpoint redirects to a host that may be unreachable for a client
-      # inspecting the run remotely.
-      - name: Capture logs on failure
+      # On failure, publish the log to the branch itself.
+      #
+      # Artifacts and the job-log API both redirect to Azure blob storage, which
+      # an inspecting client may be unable to reach. Git is the transport that
+      # always works, and a failing assertion is worth a commit.
+      - name: Publish failure log to the branch
         if: failure()
         shell: pwsh
         run: |
-          $out = Join-Path $PWD 'failure-log.txt'
-          "Commit: $env:GITHUB_SHA" | Out-File $out
-          "Runner: $env:ImageOS" | Out-File $out -Append
-          # Re-run the suite so the failing assertion text lands in the file even
-          # if the step above was truncated in the web UI.
-          npx vitest run --reporter=verbose 2>&1 | Out-File $out -Append
-          Get-Content $out -Tail 200 | Write-Host
+          $out = 'ci-failure.txt'
+          "Commit: ${env:GITHUB_SHA}" | Out-File $out -Encoding utf8
+          "Runner: Windows $($env:ImageOS)" | Out-File $out -Append -Encoding utf8
+          "" | Out-File $out -Append -Encoding utf8
+          # `2>&1 | Out-File` so a non-zero exit does not abort the step before
+          # the output is written.
+          npx vitest run --reporter=verbose 2>&1 | Out-File $out -Append -Encoding utf8
+          "" | Out-File $out -Append -Encoding utf8
+          "--- node/npm ---" | Out-File $out -Append -Encoding utf8
+          "node $(node --version)" | Out-File $out -Append -Encoding utf8
+          "npm $(npm --version)" | Out-File $out -Append -Encoding utf8
+          "platform $([System.Environment]::OSVersion.VersionString)" | Out-File $out -Append -Encoding utf8
+
+          git config user.name 'phutrue-ci'
+          git config user.email 'ci@users.noreply.github.com'
+          git add ci-failure.txt
+          git commit -m 'ci: Windows failure log [skip ci]'
+          git push
 
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phutrue-smoke-reports
-          path: failure-log.txt
+          path: ci-failure.txt
           if-no-files-found: ignore
           retention-days: 14
 

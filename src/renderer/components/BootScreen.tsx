@@ -26,9 +26,11 @@ interface BootScreenProps {
   message?: string;
   info?: AppInfo;
   settings?: Settings;
+  /** Shown as a "Back" control when the screen is reached from the app shell. */
+  onClose?: () => void;
 }
 
-export function BootScreen({ variant, message, info, settings }: BootScreenProps): JSX.Element {
+export function BootScreen({ variant, message, info, settings, onClose }: BootScreenProps): JSX.Element {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   // The diagnostics screen replaces the card rather than overlaying it, so there
@@ -44,6 +46,11 @@ export function BootScreen({ variant, message, info, settings }: BootScreenProps
   return (
     <div className="boot">
       <div className="boot__card">
+        {onClose && (
+          <button type="button" className="boot__back" onClick={onClose}>
+            Back to accounts
+          </button>
+        )}
         <img className="boot__logo" src={logoUrl} width={96} height={96} alt="" aria-hidden="true" />
 
         <h1 className="boot__title">Phutrue</h1>
@@ -101,8 +108,8 @@ export function BootScreen({ variant, message, info, settings }: BootScreenProps
             )}
 
             <p className="boot__next">
-              Milestone 1 complete — application shell, secure IPC and storage are wired.
-              Account setup and mail arrive in the next milestones.
+              Shell, secure IPC and storage are wired. Account setup is available; mail
+              synchronisation arrives in a later milestone.
             </p>
 
             {/*

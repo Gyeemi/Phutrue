@@ -78,6 +78,32 @@ async function render() {
   await act(async () => { await Promise.resolve(); });
 }
 
+function findButton(text: string): HTMLButtonElement | undefined {
+  return [...container.querySelectorAll('button')].find((b) => (b.textContent ?? '').includes(text));
+}
+
+/**
+ * Reach the boot screen.
+ *
+ * Since M3 the app opens on account setup, and the environment details plus the
+ * diagnostics view live behind "About & diagnostics". The assertions below are
+ * unchanged; only the route to the screen is.
+ */
+async function openAbout() {
+  const button = findButton('About & diagnostics');
+  if (!button) throw new Error('About control not found');
+  await act(async () => {
+    button.click();
+  });
+  await act(async () => { await Promise.resolve(); });
+}
+
+/** Render and navigate to the boot screen. */
+async function renderAbout() {
+  await render();
+  await openAbout();
+}
+
 describe('successful boot', () => {
   beforeEach(() => {
     setBridge({
@@ -85,6 +111,7 @@ describe('successful boot', () => {
       invoke: async (channel: string) => {
         if (channel === 'app:info') return { ok: true, value: INFO };
         if (channel === 'settings:get') return { ok: true, value: SETTINGS };
+        if (channel === 'accounts:list') return { ok: true, value: [] };
         return { ok: false, code: 'UNKNOWN_CHANNEL', message: 'no' };
       },
       on: () => () => {},
@@ -99,7 +126,7 @@ describe('successful boot', () => {
   });
 
   it('renders the logo with an inlined data URI', async () => {
-    await render();
+    await renderAbout();
     const img = container.querySelector('img.boot__logo');
     expect(img).not.toBeNull();
     expect(img?.getAttribute('src')).toMatch(/^data:image\/png;base64,/);
@@ -108,7 +135,7 @@ describe('successful boot', () => {
   });
 
   it('shows values read from the main process, not hardcoded ones', async () => {
-    await render();
+    await renderAbout();
     const text = document.body.textContent ?? '';
     expect(text).toContain('0.1.0');
     expect(text).toContain('45.2.1');
@@ -154,11 +181,12 @@ describe('degraded states', () => {
             },
           };
         }
+        if (channel === 'accounts:list') return { ok: true, value: [] };
         return { ok: true, value: SETTINGS };
       },
       on: () => () => {},
     });
-    await render();
+    await renderAbout();
     const text = document.body.textContent ?? '';
     expect(text).toContain('unavailable');
     expect(text).toContain('Windows DPAPI is not available.');
@@ -171,6 +199,7 @@ describe('theme', () => {
       platform: 'win32',
       invoke: async (channel: string) => {
         if (channel === 'app:info') return { ok: true, value: INFO };
+        if (channel === 'accounts:list') return { ok: true, value: [] };
         return { ok: true, value: { ...SETTINGS, theme } };
       },
       on: () => () => {},
@@ -204,6 +233,7 @@ describe('diagnostics is reachable from the boot screen', () => {
       invoke: async (channel: string) => {
         if (channel === 'app:info') return { ok: true, value: INFO };
         if (channel === 'settings:get') return { ok: true, value: SETTINGS };
+        if (channel === 'accounts:list') return { ok: true, value: [] };
         if (channel === 'app:diagnostics') {
           return {
             ok: true,
@@ -230,21 +260,15 @@ describe('diagnostics is reachable from the boot screen', () => {
     });
   }
 
-  function findButton(text: string): HTMLButtonElement | undefined {
-    return [...container.querySelectorAll('button')].find((b) =>
-      (b.textContent ?? '').includes(text)
-    );
-  }
-
   it('renders a "Run diagnostics" button on the ready boot screen', async () => {
     installWorkingBridge();
-    await render();
+    await renderAbout();
     expect(findButton('Run diagnostics')).toBeDefined();
   });
 
   it('opens the diagnostics view when clicked', async () => {
     installWorkingBridge();
-    await render();
+    await renderAbout();
 
     const button = findButton('Run diagnostics');
     expect(button).toBeDefined();
@@ -261,7 +285,7 @@ describe('diagnostics is reachable from the boot screen', () => {
 
   it('can be dismissed back to the boot screen', async () => {
     installWorkingBridge();
-    await render();
+    await renderAbout();
 
     await act(async () => {
       findButton('Run diagnostics')!.click();
@@ -287,6 +311,7 @@ describe('diagnostics is reachable from the boot screen', () => {
         invoked.push(channel);
         if (channel === 'app:info') return { ok: true, value: INFO };
         if (channel === 'settings:get') return { ok: true, value: SETTINGS };
+        if (channel === 'accounts:list') return { ok: true, value: [] };
         if (channel === 'app:diagnostics') {
           return {
             ok: true,
@@ -297,7 +322,7 @@ describe('diagnostics is reachable from the boot screen', () => {
       },
       on: () => () => {},
     });
-    await render();
+    await renderAbout();
 
     await act(async () => {
       findButton('Run diagnostics')!.click();

@@ -1,15 +1,21 @@
 /**
  * Application shell.
  *
- * Milestone 1 scope: prove the pipeline end to end — app:// protocol, IPC bridge,
- * CSP, theme tokens, and a real read of main-process state. The feature surface
- * (accounts, mail, composer) is layered on in later milestones.
+ * Responsibilities, in order:
+ *   1. establish that the bridge exists and read the facts the UI needs;
+ *   2. apply the persisted theme;
+ *   3. show the boot screen while that happens, and a specific error if it
+ *      cannot, because a blank window is indistinguishable from a crash;
+ *   4. hand off to the account setup screen.
+ *
+ * The shell owns no feature logic. Everything below it talks to `api.ts`.
  */
 
 import { useEffect, useState } from 'react';
 
 import type { AppInfo, Settings } from '../../shared/models.js';
-import { call, isBridgeAvailable } from '../api.js';
+import { callResult, isBridgeAvailable } from '../api.js';
+import { AccountScreen } from '../components/AccountScreen.js';
 import { BootScreen } from '../components/BootScreen.js';
 
 type LoadState =
@@ -19,6 +25,7 @@ type LoadState =
 
 export function App(): JSX.Element {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
+  const [showBootDetails, setShowBootDetails] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,24 +37,42 @@ export function App(): JSX.Element {
         }
         return;
       }
-      try {
-        const [info, settings] = await Promise.all([
-          call('app:info', undefined),
-          call('settings:get', undefined),
-        ]);
-        if (!cancelled) setState({ status: 'ready', info, settings });
-      } catch (err) {
-        if (!cancelled) {
-          setState({
-            status: 'error',
-            message: err instanceof Error ? err.message : 'Failed to start.',
-          });
-        }
+
+      /*
+       * Both reads are independent, so they are awaited together. `callResult` is
+       * used rather than `call` because the two failures need different words:
+       * a missing settings row is recoverable and should not block the app, while
+       * a failure to read app information means the main process is unhealthy.
+       */
+      const [info, settings] = await Promise.all([
+        callResult('app:info', undefined),
+        callResult('settings:get', undefined),
+      ]);
+      if (cancelled) return;
+
+      if (!info.ok) {
+        setState({ status: 'error', message: info.message });
+        return;
       }
+
+      // Settings failure is not fatal: the app works with defaults.
+      const resolved: Settings = settings.ok
+        ? settings.value
+        : {
+            theme: 'system',
+            syncIntervalSeconds: 300,
+            loadRemoteImages: false,
+            notificationsEnabled: true,
+            pageSize: 50,
+          };
+
+      setState({ status: 'ready', info: info.value, settings: resolved });
     }
 
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Apply the persisted theme to the document so the tokens resolve correctly.
@@ -64,8 +89,47 @@ export function App(): JSX.Element {
   if (state.status === 'loading') {
     return <BootScreen variant="loading" />;
   }
+
   if (state.status === 'error') {
     return <BootScreen variant="error" message={state.message} />;
   }
-  return <BootScreen variant="ready" info={state.info} settings={state.settings} />;
+
+  /*
+   * The boot screen is still reachable: it is the only place that reports the
+   * real environment facts and hosts the diagnostics view, which is how a
+   * Windows tester confirms the storage stack. Hiding it entirely would remove
+   * that.
+   */
+  if (showBootDetails) {
+    return (
+      <BootScreen
+        variant="ready"
+        info={state.info}
+        settings={state.settings}
+        onClose={() => setShowBootDetails(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="shell">
+      <header className="shell__bar">
+        <span className="shell__brand">Phutrue</span>
+        <span className="shell__by">by Baraily Inovex</span>
+        <span className="shell__spacer" />
+        <button
+          type="button"
+          className="shell__link"
+          onClick={() => setShowBootDetails(true)}
+          title="Environment details and diagnostics"
+        >
+          About &amp; diagnostics
+        </button>
+      </header>
+
+      <main className="shell__main">
+        <AccountScreen ready={isBridgeAvailable()} />
+      </main>
+    </div>
+  );
 }

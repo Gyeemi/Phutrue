@@ -12,6 +12,7 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './app/App.js';
 import './styles/app.css';
+import './components/account.css';
 
 const container = document.getElementById('root');
 if (!container) {

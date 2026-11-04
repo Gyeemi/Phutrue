@@ -1,0 +1,530 @@
+/*
+ * Account setup screen.
+ *
+ * All values come from the tokens in styles/app.css; no colour is invented here.
+ * The layout is a centred column with a maximum width, because a settings-style
+ * screen reads badly when stretched across a 1280 px window.
+ */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: min(720px, 100%);
+  margin: 0 auto;
+  padding: 40px 28px 48px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.setup__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.setup__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.setup__subtitle {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 52ch;
+}
+
+.setup__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--bg-raised);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+}
+
+.setup__error p {
+  margin: 0;
+}
+
+.setup__footnote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+/* ---- buttons ------------------------------------------------------ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 15px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  white-space: nowrap;
+}
+
+.btn--small {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.btn--primary {
+  color: var(--accent-text);
+  background: var(--accent);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--brand-blue-deep);
+}
+
+.btn--quiet {
+  color: var(--text);
+  background: var(--bg-raised);
+  border-color: var(--border-strong);
+}
+
+.btn--quiet:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.btn--danger {
+  color: #fff;
+  background: var(--danger);
+}
+
+.btn--danger:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.btn--danger-quiet {
+  color: var(--danger);
+  background: transparent;
+  border-color: var(--border-strong);
+}
+
+.btn--danger-quiet:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+/* ---- sign-in panel ------------------------------------------------ */
+
+.signin {
+  padding: 24px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-1);
+}
+
+.signin__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.signin__title:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.signin__subtitle {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 60ch;
+}
+
+/*
+ * The live region is visually present but empty in the idle state, so it
+ * occupies no space yet still exists for assistive technology to announce into.
+ */
+.signin__status:empty {
+  display: none;
+}
+
+.signin__status {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.signin__providers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* ---- provider card ------------------------------------------------ */
+
+.provider {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.provider:hover {
+  border-color: var(--border-strong);
+}
+
+.provider.is-active {
+  border-color: var(--accent);
+  background: var(--bg-selected);
+}
+
+.provider__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.provider__desc {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-width: 46ch;
+}
+
+.provider__button {
+  min-width: 96px;
+}
+
+.provider__mark {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  width: 34px;
+  height: 34px;
+  place-self: center;
+}
+
+.provider__mark-dot {
+  border-radius: 50%;
+  display: block;
+}
+
+.provider__mark-dot--blue { background: #4285f4; }
+.provider__mark-dot--red { background: #ea4335; }
+.provider__mark-dot--yellow { background: #fbbc05; }
+.provider__mark-dot--green { background: #34a853; }
+
+.provider__mark-square {
+  display: block;
+  border-radius: 2px;
+}
+
+.provider__mark-square--red { background: #f25022; }
+.provider__mark-square--green { background: #7fba00; }
+.provider__mark-square--blue { background: #00a4ef; }
+.provider__mark-square--yellow { background: #ffb900; }
+
+/* ---- progress and waiting ----------------------------------------- */
+
+.signin__progress,
+.signin__waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 26px 20px;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.signin__progress-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.signin__waiting-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.signin__waiting-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 46ch;
+}
+
+.signin__waiting-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+  max-width: 46ch;
+}
+
+.spinner {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 720ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- results ------------------------------------------------------ */
+
+.signin__result {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.signin__result--success {
+  border-color: var(--success);
+}
+
+.signin__result--error {
+  border-color: var(--danger);
+}
+
+.signin__result-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.signin__result--success .signin__result-title {
+  color: var(--success);
+}
+
+.signin__result--error .signin__result-title {
+  color: var(--danger);
+}
+
+.signin__result-text {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.signin__result-code {
+  margin: 8px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.signin__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.signin__result--success .btn {
+  margin-top: 14px;
+}
+
+.signin__blocked {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
+/* ---- account list ------------------------------------------------- */
+
+.accts__empty {
+  margin: 0;
+  padding: 28px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg-raised);
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+}
+
+.accts__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.accts__note {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.accts__error {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
+.acct {
+  padding: 14px 16px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.acct__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.acct__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.acct__label {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acct__email {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acct__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.acct__provider {
+  padding: 2px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.acct__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.acct__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.acct__status--ok { color: var(--success); }
+.acct__status--warn { color: var(--warning); }
+.acct__status--bad { color: var(--danger); }
+.acct__status--muted { color: var(--text-faint); }
+
+.acct__hint {
+  margin: 9px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.acct__hint--bad {
+  color: var(--danger);
+}
+
+.acct__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.acct__confirm {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--bg-sunken);
+  border-radius: 8px;
+}
+
+.acct__confirm-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.acct__confirm-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* ---- add another -------------------------------------------------- */
+
+.add-another {
+  padding: 18px 20px;
+  background: var(--bg-raised);
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+}
+
+.add-another__title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.add-another__buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

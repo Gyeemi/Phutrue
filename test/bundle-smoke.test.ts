@@ -55,6 +55,7 @@ function bridge(info: unknown, settings: unknown) {
         };
       }
       if (channel === 'app:copyToClipboard') return { ok: true, value: undefined };
+      if (channel === 'accounts:list') return { ok: true, value: [] };
       return { ok: false, code: 'UNKNOWN_CHANNEL', message: 'no' };
     },
     on: () => () => {},
@@ -119,6 +120,22 @@ const SETTINGS = {
 
 const built = existsSync(path.join(DIST, 'app.js')) && existsSync(path.join(DIST, 'index.html'));
 
+/**
+ * Click through to the boot screen.
+ *
+ * Since M3 the bundle opens on account setup; the environment facts and the
+ * diagnostics view live behind "About & diagnostics". The assertions are
+ * unchanged.
+ */
+async function openAbout(): Promise<void> {
+  const button = [...document.querySelectorAll('button')].find((b) =>
+    (b.textContent ?? '').includes('About & diagnostics')
+  );
+  if (!button) throw new Error('About control not found in the bundled shell');
+  button.click();
+  await settle();
+}
+
 beforeEach(() => {
   document.head.querySelectorAll('script').forEach((s) => s.remove());
   document.body.replaceChildren();
@@ -157,6 +174,7 @@ describe.skipIf(!built)('the shipped bundle renders the whole boot screen', () =
   it('renders the environment facts read over IPC', async () => {
     runBundle(INFO, SETTINGS);
     await settle();
+    await openAbout();
 
     const text = document.body.textContent ?? '';
     expect(text).toContain('0.1.0');
@@ -168,6 +186,7 @@ describe.skipIf(!built)('the shipped bundle renders the whole boot screen', () =
   it('renders the Run diagnostics control', async () => {
     runBundle(INFO, SETTINGS);
     await settle();
+    await openAbout();
 
     const button = [...document.querySelectorAll('button')].find((b) =>
       (b.textContent ?? '').includes('Run diagnostics')
@@ -178,6 +197,7 @@ describe.skipIf(!built)('the shipped bundle renders the whole boot screen', () =
   it('opens the diagnostics view when the bundled button is clicked', async () => {
     runBundle(INFO, SETTINGS);
     await settle();
+    await openAbout();
 
     const button = [...document.querySelectorAll('button')].find((b) =>
       (b.textContent ?? '').includes('Run diagnostics')
@@ -194,6 +214,7 @@ describe.skipIf(!built)('the shipped bundle renders the whole boot screen', () =
   it('inlines the logo as a data URI, so no network or disk fetch is needed', async () => {
     runBundle(INFO, SETTINGS);
     await settle();
+    await openAbout();
 
     const img = document.querySelector('img.boot__logo') as HTMLImageElement | null;
     expect(img).not.toBeNull();
@@ -228,6 +249,64 @@ describe('the bundle smoke test is actually running', () => {
  * applying at all. Asserted against the real handler in protocol.test.ts; here
  * the shipped files are checked to exist so that handler has something to serve.
  * ------------------------------------------------------------------ */
+
+describe.skipIf(!built)('the shipped bundle renders account setup', () => {
+  it('offers both providers on the real DOM', async () => {
+    // Accounts list is empty: the setup surface is what should appear.
+    (window as unknown as Record<string, unknown>)['phutrue'] = {
+      platform: 'win32',
+      invoke: async (channel: string) => {
+        if (channel === 'app:info') return { ok: true, value: INFO };
+        if (channel === 'settings:get') return { ok: true, value: SETTINGS };
+        if (channel === 'accounts:list') return { ok: true, value: [] };
+        return { ok: false, code: 'UNKNOWN_CHANNEL', message: 'no' };
+      },
+      on: () => () => {},
+    };
+
+    const code = readFileSync(path.join(DIST, 'app.js'), 'utf8');
+    // eslint-disable-next-line no-new-func
+    new Function(code)();
+    await settle();
+
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('Set up your mail');
+    expect(text).toContain('Gmail');
+    expect(text).toContain('Microsoft');
+
+    const labels = [...document.querySelectorAll('button')].map((b) => b.getAttribute('aria-label') ?? '');
+    expect(labels).toContain('Sign in with Google');
+    expect(labels).toContain('Sign in with Microsoft');
+  });
+
+  it('still reaches the boot screen through the shell', async () => {
+    (window as unknown as Record<string, unknown>)['phutrue'] = {
+      platform: 'win32',
+      invoke: async (channel: string) => {
+        if (channel === 'app:info') return { ok: true, value: INFO };
+        if (channel === 'settings:get') return { ok: true, value: SETTINGS };
+        if (channel === 'accounts:list') return { ok: true, value: [] };
+        return { ok: false, code: 'UNKNOWN_CHANNEL', message: 'no' };
+      },
+      on: () => () => {},
+    };
+
+    const code = readFileSync(path.join(DIST, 'app.js'), 'utf8');
+    // eslint-disable-next-line no-new-func
+    new Function(code)();
+    await settle();
+
+    const about = [...document.querySelectorAll('button')].find((b) =>
+      (b.textContent ?? '').includes('About & diagnostics')
+    );
+    expect(about).toBeDefined();
+    about!.click();
+    await settle();
+
+    expect(document.body.textContent).toContain('by Baraily Inovex');
+    expect(document.body.textContent).toContain('Run diagnostics');
+  });
+});
 
 describe.skipIf(!built)('shipped files the handler must type correctly', () => {
   it('index.html references only relative assets', () => {

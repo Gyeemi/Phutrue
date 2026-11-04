@@ -1,0 +1,23 @@
+# Normalise line endings in the repository.
+#
+# A Windows checkout would otherwise convert these files to CRLF, and a test
+# that slices source text on '\n}\n' then finds nothing. That is exactly what
+# happened: two tests passed on Linux and failed on the Windows runner, because
+# the assertion was inspecting source text whose line endings differed by
+# platform. Pinning LF in the repository removes the discrepancy at its source
+# rather than making every test CRLF-aware.
+* text=auto eol=lf
+
+# Binary assets must never be converted.
+*.png binary
+*.ico binary
+*.bmp binary
+*.jpg binary
+*.jpeg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.exe binary
+
+# PowerShell scripts should keep platform endings.
+*.ps1 text eol=crlf

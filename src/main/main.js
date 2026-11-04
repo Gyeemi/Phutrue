@@ -10,8 +10,8 @@
 'use strict';
 
 const { app, BrowserWindow, Tray, Menu, nativeImage, Notification } = require('electron');
+const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
 
 /**
  * Windows taskbar grouping and toast attribution are keyed on this string.
@@ -48,7 +48,34 @@ const ICONS = {
   tray: () => asset('png', 'icon-32.png'),
   /** Toast images are rendered at up to 64px on modern Windows. */
   notification: () => asset('png', 'icon-256.png'),
+  /**
+   * The branding screen is a `data:` document, and a `data:` document is not
+   * permitted to load `file://` subresources - Chromium blocks them with
+   * "Not allowed to load local resource" and the <img> falls back to the
+   * broken-image placeholder. Inlining the PNG as a `data:` URI keeps the
+   * request same-scheme, so no security setting needs relaxing.
+   *
+   * 128px is used rather than 256px because the image is displayed in a
+   * 128x128 slot: it is pixel-exact at that size and the base64 payload is
+   * roughly a third of the 256px one.
+   */
+  brandingScreen: () => asset('png', 'icon-128.png'),
 };
+
+/**
+ * Read the branding-screen icon and return it as a `data:image/png;base64,`
+ * URI. Returns null if the file cannot be read, so a missing icon degrades to
+ * the text-only screen instead of taking the window down.
+ */
+function brandingIconDataUri() {
+  try {
+    return 'data:image/png;base64,' +
+      fs.readFileSync(ICONS.brandingScreen()).toString('base64');
+  } catch (err) {
+    console.error('[phutrue] branding icon unavailable:', err.message);
+    return null;
+  }
+}
 
 let mainWindow = null;
 let tray = null;
@@ -75,6 +102,9 @@ function createMainWindow() {
   });
 
   // Branding placeholder only. The real UI arrives in a later phase.
+  // Same-origin `data:` icon: a `file://` src here would be blocked by
+  // Chromium's local-resource policy (see brandingIconDataUri above).
+  const brandingIcon = brandingIconDataUri();
   mainWindow.loadURL(
     'data:text/html;charset=utf-8,' +
       encodeURIComponent(
@@ -83,7 +113,9 @@ function createMainWindow() {
           '<body style="font-family:Segoe UI,system-ui,sans-serif;display:grid;' +
           'place-items:center;height:100vh;margin:0;color:#0b1f3a">' +
           '<div style="text-align:center">' +
-          '<img src="' + pathToFileURL(ICONS.window()).href + '" width="128" height="128" alt="">' +
+          (brandingIcon
+            ? '<img src="' + brandingIcon + '" width="128" height="128" alt="">'
+            : '') +
           '<h1 style="font-weight:600;margin:.4em 0 .1em">Phutrue</h1>' +
           '<p style="margin:0;color:#5a6b82">by Baraily Inovex</p>' +
           '</div></body>'

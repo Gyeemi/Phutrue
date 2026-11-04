@@ -296,8 +296,18 @@ jobs:
           git config user.email 'ci@users.noreply.github.com'
           git add $dir
           git commit -m "build: record installer checksum $hash [skip ci]"
-          git push origin "HEAD:${{ github.ref_name }}" 2>&1 | Tee-Object -FilePath push.log
-          if ($LASTEXITCODE -ne 0) {
+
+          # GitHub returns an occasional 500 to a push. It is transient and the
+          # checksum is the only record of this build, so retry before giving up.
+          $pushed = $false
+          for ($attempt = 1; $attempt -le 4; $attempt++) {
+            git push origin "HEAD:${{ github.ref_name }}" 2>&1 | Tee-Object -FilePath push.log
+            if ($LASTEXITCODE -eq 0) { $pushed = $true; break }
+            Write-Host "push attempt $attempt failed; retrying in 15s"
+            Start-Sleep -Seconds 15
+          }
+
+          if (-not $pushed) {
             $msg = ((Get-Content push.log -Raw) -replace "`r?`n", ' | ')
             if ($msg.Length -gt 700) { $msg = $msg.Substring(0, 700) }
             Write-Host "::error title=checksum push failed::$msg"

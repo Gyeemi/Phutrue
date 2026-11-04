@@ -148,75 +148,74 @@ jobs:
       - name: Start on a half-migrated database that already holds an account
         shell: pwsh
         run: |
-          $userData = Join-Path $env:APPDATA 'Phutrue'
-          New-Item -ItemType Directory -Force -Path $userData | Out-Null
-          $dbPath = Join-Path $userData 'phutrue.db'
-          Remove-Item -Force -ErrorAction SilentlyContinue $dbPath, "$dbPath-wal", "$dbPath-shm"
+          $ErrorActionPreference = 'Stop'
+          $log = Join-Path $PWD 'half-migrated.log'
+          try {
+            $userData = Join-Path $env:APPDATA 'Phutrue'
+            New-Item -ItemType Directory -Force -Path $userData | Out-Null
+            $dbPath = Join-Path $userData 'phutrue.db'
+            Remove-Item -Force -ErrorAction SilentlyContinue $dbPath, "$dbPath-wal", "$dbPath-shm"
 
-          & node -e "
+            $seed = @'
             const { DatabaseSync } = require('node:sqlite');
             const db = new DatabaseSync(process.argv[1]);
             db.exec('PRAGMA journal_mode = WAL');
-            // Accounts exists with a real row, so it must not be discarded.
-            db.exec(\`CREATE TABLE accounts (
-              id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT NOT NULL,
-              email TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '',
-              auth_kind TEXT NOT NULL, oauth_provider TEXT,
-              imap_host TEXT NOT NULL, imap_port INTEGER NOT NULL,
-              imap_secure INTEGER NOT NULL DEFAULT 1,
-              smtp_host TEXT NOT NULL, smtp_port INTEGER NOT NULL,
-              smtp_secure INTEGER NOT NULL DEFAULT 1, smtp_user TEXT,
-              sync_state TEXT NOT NULL DEFAULT 'idle', last_error TEXT,
-              last_synced_at INTEGER, created_at INTEGER NOT NULL)\`);
-            db.exec(\`INSERT INTO accounts (label, email, auth_kind, imap_host,
-              imap_port, smtp_host, smtp_port, created_at)
-              VALUES ('Existing', 'existing@example.com', 'password',
-                'imap.example.com', 993, 'smtp.example.com', 587, 1)\`);
+            db.exec("CREATE TABLE accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT NOT NULL, email TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', auth_kind TEXT NOT NULL, oauth_provider TEXT, imap_host TEXT NOT NULL, imap_port INTEGER NOT NULL, imap_secure INTEGER NOT NULL DEFAULT 1, smtp_host TEXT NOT NULL, smtp_port INTEGER NOT NULL, smtp_secure INTEGER NOT NULL DEFAULT 1, smtp_user TEXT, sync_state TEXT NOT NULL DEFAULT 'idle', last_error TEXT, last_synced_at INTEGER, created_at INTEGER NOT NULL)");
+            db.exec("INSERT INTO accounts (label, email, auth_kind, imap_host, imap_port, smtp_host, smtp_port, created_at) VALUES ('Existing', 'existing@example.com', 'password', 'imap.example.com', 993, 'smtp.example.com', 587, 1)");
             db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
             db.exec('INSERT INTO schema_version (version) VALUES (0)');
             db.close();
-          " $dbPath
-          if (-not (Test-Path $dbPath)) { throw 'Could not seed the half-migrated database' }
-          Write-Host "Seeded a half-migrated database with one account at $dbPath"
+            console.log('seeded');
+          '@
+            $seed | Out-File -FilePath (Join-Path $PWD 'seed.cjs') -Encoding utf8
+            & node (Join-Path $PWD 'seed.cjs') $dbPath *>> $log
+            if ($LASTEXITCODE -ne 0) { throw "seeding failed with $LASTEXITCODE" }
+            if (-not (Test-Path $dbPath)) { throw 'the seeded database was not created' }
 
-          $app = Join-Path $PWD 'release\win-unpacked\Phutrue.exe'
-          $report = Join-Path $PWD 'recovered-smoke-report.json'
-          Remove-Item -Force -ErrorAction SilentlyContinue $report
-          $env:PHUTRUE_SMOKE = '1'
-          $env:PHUTRUE_SMOKE_OUT = $report
+            $app = Join-Path $PWD 'release\win-unpacked\Phutrue.exe'
+            $report = Join-Path $PWD 'recovered-smoke-report.json'
+            $stderrFile = Join-Path $PWD 'app-stderr.txt'
+            Remove-Item -Force -ErrorAction SilentlyContinue $report, $stderrFile
+            $env:PHUTRUE_SMOKE = '1'
+            $env:PHUTRUE_SMOKE_OUT = $report
 
-          $proc = Start-Process -FilePath $app -PassThru -NoNewWindow
-          if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw 'Half-migrated start-up timed out' }
-          Write-Host "App exited with code $($proc.ExitCode)"
-          if ($proc.ExitCode -ne 0) {
-            throw "App failed to start on a half-migrated database (exit $($proc.ExitCode)). This is the reported bug."
-          }
-          if (-not (Test-Path $report)) { throw 'No smoke report after recovery' }
-          Get-Content $report | Write-Host
-          $json = Get-Content $report -Raw | ConvertFrom-Json
-          if (-not $json.ok) { throw "Half-migrated smoke FAILED: missing=$($json.missing -join ', ')" }
-          if ($json.schemaVersion -lt 1) { throw "Half-migrated smoke FAILED: schema v$($json.schemaVersion)" }
+            $proc = Start-Process -FilePath $app -PassThru -NoNewWindow `
+              -RedirectStandardError $stderrFile -RedirectStandardOutput (Join-Path $PWD 'app-stdout.txt')
+            if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw 'start-up timed out after 90s' }
+            "exit code: $($proc.ExitCode)" | Out-File -FilePath $log -Append -Encoding utf8
+            if (Test-Path $stderrFile) { "stderr:" | Out-File $log -Append; Get-Content $stderrFile | Out-File $log -Append }
 
-          # The migration must have finished in place: no file set aside, because
-          # the half-applied schema can now be completed rather than replaced.
-          $aside = Get-ChildItem -Path $userData -Filter 'phutrue.db.unusable-*' -ErrorAction SilentlyContinue
-          if ($aside) { throw "The database was replaced instead of completed: $($aside.Name)" }
+            if ($proc.ExitCode -ne 0) { throw "app exited $($proc.ExitCode) on a half-migrated database - the reported bug" }
+            if (-not (Test-Path $report)) { throw 'no smoke report was written' }
+            $json = Get-Content $report -Raw | ConvertFrom-Json
+            $json | ConvertTo-Json -Depth 5 | Out-File -FilePath $log -Append
+            if (-not $json.ok) { throw "smoke failed: missing=$($json.missing -join ', ')" }
+            if ($json.schemaVersion -lt 1) { throw "schema version was $($json.schemaVersion)" }
 
-          # And the account that was already there must still be there.
-          $count = & node -e "
+            $aside = Get-ChildItem -Path $userData -Filter 'phutrue.db.unusable-*' -ErrorAction SilentlyContinue
+            if ($aside) { throw "database was replaced instead of completed: $($aside.Name)" }
+
+            $check = @'
             const { DatabaseSync } = require('node:sqlite');
             const db = new DatabaseSync(process.argv[1], { readOnly: true });
-            const r = db.prepare('SELECT COUNT(*) AS n, MAX(version) AS v FROM accounts, schema_version').get();
-            console.log(r.n + '|' + r.v);
-          " $dbPath
-          Write-Host "accounts|version = $count"
-          $parts = ($count -split '\|')
-          if ([int]$parts[0] -ne 1) { throw "Existing account was lost: found $($parts[0])" }
-          if ([int]$parts[1] -lt 1) { throw "Schema version was not recorded: $($parts[1])" }
-          Write-Host "PASS: migration completed in place, the existing account survived"
+            const n = db.prepare('SELECT COUNT(*) AS n FROM accounts').get().n;
+            const v = db.prepare('SELECT MAX(version) AS v FROM schema_version').get().v;
+            console.log('RESULT ' + n + ' ' + v);
+          '@
+            $check | Out-File -FilePath (Join-Path $PWD 'check.cjs') -Encoding utf8
+            $out = & node (Join-Path $PWD 'check.cjs') $dbPath
+            "check: $out" | Out-File -FilePath $log -Append
+            $line = ($out | Select-String 'RESULT').ToString().Trim() -split '\s+'
+            if ([int]$line[1] -ne 1) { throw "existing account was lost: found $($line[1])" }
+            if ([int]$line[2] -lt 1) { throw "schema version was not recorded: $($line[2])" }
 
-          # Clean up so the install test starts from the state a user would have.
-          Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $userData
+            Write-Host "PASS: migration completed in place; the existing account survived; schema v$($line[2])"
+            Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $userData
+          } catch {
+            Get-Content $log -ErrorAction SilentlyContinue | Write-Host
+            Write-Host "::error title=half-migrated start-up::$($_.Exception.Message)"
+            exit 1
+          }
 
       # The installer itself must be launchable and its payload must be intact.
       # A full silent install is worth doing here: it is the only way to know the

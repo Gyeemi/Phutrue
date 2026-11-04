@@ -82,6 +82,23 @@ export interface DiagnosticsDeps {
    * here, and every detail is scrubbed against it as a final step.
    */
   redactValues?: string[];
+  /**
+   * Facts about the renderer bundle this process is serving.
+   *
+   * Optional: a sandbox test or a future headless mode may not have a renderer
+   * directory to inspect. When absent the check reports `skip` rather than
+   * pretending to have verified something.
+   */
+  build?: {
+    /** Absolute path of dist/renderer. */
+    rendererPath: string;
+    /** Stamp baked into this bundle at build time. */
+    stamp: string;
+    /** File names the renderer needs, in load order. */
+    expectedFiles: readonly string[];
+    /** Size in bytes of a file in the renderer directory, or null if missing. */
+    fileSize: (name: string) => number | null;
+  };
 }
 
 /** Monotonic-ish clock, injected so durations are deterministic in tests. */
@@ -266,6 +283,47 @@ export function runDiagnostics(deps: DiagnosticsDeps, clock: Clock = Date.now): 
       return { status: 'pass', detail: 'round-trip ok; stored form is ciphertext' };
     })
   );
+
+  /* 8. Build integrity --------------------------------------------- *
+   * A running window can only display a bundle that exists, is non-empty, and
+   * was produced by the build the main process belongs to. A stale installed
+   * copy, a partial extraction, or a truncated write all show up here rather
+   * than as a mysterious blank screen.
+   * ----------------------------------------------------------------- */
+  if (deps.build) {
+    const build = deps.build;
+    checks.push(
+      runCheck('build.integrity', 'Renderer bundle integrity', clock, () => {
+        const missing: string[] = [];
+        const empty: string[] = [];
+
+        for (const name of build.expectedFiles) {
+          const size = build.fileSize(name);
+          if (size === null) missing.push(name);
+          else if (size === 0) empty.push(name);
+        }
+
+        if (missing.length > 0) {
+          return {
+            status: 'fail',
+            detail: `missing from ${redactPath(build.rendererPath)}: ${missing.join(', ')} — the window will be blank or unstyled`,
+          };
+        }
+        if (empty.length > 0) {
+          return { status: 'fail', detail: `empty file(s): ${empty.join(', ')}` };
+        }
+
+        return { status: 'pass', detail: `stamp ${build.stamp}; ${build.expectedFiles.length} files present` };
+      })
+    );
+  } else {
+    checks.push(
+      runCheck('build.integrity', 'Renderer bundle integrity', clock, () => ({
+        status: 'skip',
+        detail: 'not inspected in this process',
+      }))
+    );
+  }
 
   // Final pass: scrub every detail against the caller's forbidden literals. The
   // report is public by design, so this runs on the finished checks rather than

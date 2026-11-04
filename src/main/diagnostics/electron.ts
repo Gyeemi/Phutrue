@@ -163,8 +163,18 @@ export function probeSecureStorage(): SecureStorageProbe {
 }
 
 /** Assemble the dependency bundle for one run. */
-export function electronDeps(db: DatabaseSync, databasePath: string): DiagnosticsDeps {
-  return {
+/**
+ * @param rendererPath Absolute path of the served renderer directory, or null
+ *   when this process has none (tests, headless use).
+ * @param buildStamp The stamp baked into this bundle by scripts/build.mjs.
+ */
+export function electronDeps(
+  db: DatabaseSync,
+  databasePath: string,
+  rendererPath: string | null = null,
+  buildStamp = 'dev'
+): DiagnosticsDeps {
+  const deps: DiagnosticsDeps = {
     databasePath,
     schemaVersion: readSchemaVersion(db),
     expectedSchemaVersion: expectedSchemaVersion(),
@@ -181,6 +191,19 @@ export function electronDeps(db: DatabaseSync, databasePath: string): Diagnostic
     // recognise (UNC, relocated profile). Scrubbing the literal closes that.
     redactValues: accountNameLiterals(),
   };
+
+  if (rendererPath) {
+    // The three files the document cannot boot without. `app.js` supplies the
+    // interface, `app.css` its appearance; index.html is the document itself.
+    deps.build = {
+      rendererPath,
+      stamp: buildStamp,
+      expectedFiles: ['index.html', 'app.js', 'app.css'],
+      fileSize: (name) => fileSize(path.join(rendererPath, name)),
+    };
+  }
+
+  return deps;
 }
 
 /**

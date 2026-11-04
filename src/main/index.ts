@@ -95,6 +95,8 @@ function buildServices(): Services {
 function appInfo(s: Services): AppInfo {
   return {
     version: app.getVersion(),
+    buildStamp: typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : 'dev',
+    rendererPath: RENDERER_DIR,
     electron: process.versions['electron'] ?? 'unknown',
     chrome: process.versions['chrome'] ?? 'unknown',
     node: process.versions['node'] ?? 'unknown',
@@ -156,7 +158,15 @@ if (!gotLock) {
 
         // The Windows self-test. Read-only apart from a throwaway write probe
         // and an encrypt/decrypt round-trip; it never returns a secret.
-        'app:diagnostics': async () => runDiagnostics(electronDeps(svc.db, svc.databasePath)),
+        'app:diagnostics': async () =>
+          runDiagnostics(
+            electronDeps(
+              svc.db,
+              svc.databasePath,
+              RENDERER_DIR,
+              typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : 'dev'
+            )
+          ),
 
         // See the contract for why the renderer cannot use navigator.clipboard.
         'app:copyToClipboard': async (payload) => {

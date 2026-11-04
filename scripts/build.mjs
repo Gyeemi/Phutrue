@@ -15,7 +15,8 @@
  */
 
 import { build, context } from 'esbuild';
-import { rmSync, mkdirSync } from 'node:fs';
+import { rmSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -23,6 +24,31 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'dist');
 const watch = process.argv.includes('--watch');
 const dev = watch || process.argv.includes('--dev');
+
+/**
+ * A stamp identifying exactly which files this build produced.
+ *
+ * Why this exists: a Linux sandbox cannot run the Electron binary, so every
+ * claim about what a packaged Windows build *displays* is unverifiable here. The
+ * most expensive failure mode is a tester looking at a stale or partially copied
+ * bundle and reporting the wrong problem, so the running window must be able to
+ * state which bytes it is showing.
+ *
+ * The stamp is the first 12 hex characters of a SHA-256 over the emitted files
+ * in a fixed order. It depends only on build output, so two builds of the same
+ * source agree, and any difference — a missing `app.css`, a truncated `app.js`,
+ * a stale copy in an installed tree — changes it.
+ */
+function buildStamp(files) {
+  const hash = createHash('sha256');
+  for (const [name, bytes] of files) {
+    hash.update(name);
+    hash.update('\0');
+    hash.update(bytes);
+    hash.update('\0');
+  }
+  return hash.digest('hex').slice(0, 12);
+}
 
 /** Electron 45.2.1 → Node 24.22.1, Chromium 156. */
 const NODE_TARGET = 'node24';
@@ -115,6 +141,42 @@ async function run() {
     copyFileSync(htmlSrc, path.join(OUT, 'renderer/index.html'));
     console.log('[build] renderer/index.html');
   }
+
+  if (watch) {
+    // A hash of files that are still being rewritten on every keystroke would
+    // be noise, and it would require a circular rebuild of main. Development
+    // builds report the stamp as "dev" instead.
+    console.log('[build] renderer stamp: dev (watch mode)');
+    return;
+  }
+
+  /*
+   * Stamp the build, then rebuild the main process so it carries the value.
+   *
+   * Order matters: the stamp covers the renderer files, so those must be final.
+   * Main is rebuilt rather than patched so the value is baked in exactly as
+   * esbuild would bake any other constant — there is no runtime file read, and
+   * therefore no way for a packaged app to read a stale stamp file from the
+   * wrong directory.
+   */
+  const rendererFiles = ['app.js', 'app.css', 'index.html']
+    .map((name) => path.join(OUT, 'renderer', name))
+    .filter((file) => existsSync(file))
+    .map((file) => [path.basename(file), readFileSync(file)]);
+
+  const stamp = buildStamp(rendererFiles);
+  writeFileSync(
+    path.join(OUT, 'build-stamp.json'),
+    JSON.stringify({ stamp, files: rendererFiles.map(([n, b]) => ({ name: n, bytes: b.length })) }, null, 2) + '\n'
+  );
+  console.log(`[build] stamp ${stamp}`);
+
+  const mainOptions = {
+    ...targets[0].options,
+    define: { ...targets[0].options.define, __BUILD_STAMP__: JSON.stringify(stamp) },
+  };
+  await build(mainOptions);
+  console.log('[build] main (stamped)');
 }
 
 run().catch((err) => {

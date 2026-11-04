@@ -47,6 +47,14 @@ function healthyDeps(overrides: Partial<DiagnosticsDeps> = {}): DiagnosticsDeps 
       ciphertextDiffers: true,
       reason: null,
     }),
+    // A renderer directory with all three files present, so the healthy case
+    // exercises the passing branch rather than the skip.
+    build: {
+      rendererPath: 'C:\\Users\\alice\\AppData\\Local\\Programs\\Phutrue\\dist\\renderer',
+      stamp: 'abcdef123456',
+      expectedFiles: ['index.html', 'app.js', 'app.css'],
+      fileSize: (name) => (name === 'app.js' ? 250_000 : 5_000),
+    },
     ...overrides,
   };
 }
@@ -78,6 +86,7 @@ describe('all checks pass', () => {
       'database.integrity',
       'sqlite.query',
       'storage.encryption',
+      'build.integrity',
     ]);
     expect(report.checks.every((c) => c.status === 'pass')).toBe(true);
   });
@@ -447,7 +456,7 @@ describe('diagnostics must stay frictionless', () => {
   /**
    * The tester-facing checklist states how many checks to expect. That sentence
    * drifted once already (it said 6 while 7 were listed), so it is pinned here:
-   * 6 from the main process + 1 from the renderer (`bridge.ipc`).
+   * 7 from the main process + 1 from the renderer (`bridge.ipc`).
    */
   it('produces the number of checks the Windows checklist promises', async () => {
     const { readFileSync } = await import('node:fs');
@@ -458,11 +467,13 @@ describe('diagnostics must stay frictionless', () => {
     );
 
     const report = runDiagnostics(healthyDeps(), fakeClock());
-    const MAIN_CHECKS = report.checks.length; // 6
+    const MAIN_CHECKS = report.checks.length; // 7
     const RENDERER_CHECKS = 1; // bridge.ipc
     const total = MAIN_CHECKS + RENDERER_CHECKS;
 
-    expect(MAIN_CHECKS).toBe(6);
+    // Pinned deliberately: a silent extra or missing check would make the
+    // documented count wrong, and the documentation is what a tester follows.
+    expect(MAIN_CHECKS).toBe(7);
     expect(doc).toContain(`all ${total} checks PASS`);
     expect(doc).toContain(`All ${total} checks must pass`);
 
@@ -549,3 +560,90 @@ describe('the report scrubs the account name even when the path pattern misses',
   });
 });
 
+
+/* ------------------------------------------------------------------ *
+ * Build integrity
+ *
+ * The check a tester reads when the window is blank or unstyled. It has to be
+ * accurate: a false pass here would send someone hunting for a display or GPU
+ * fault when the real problem is a file that never got written.
+ * ------------------------------------------------------------------ */
+
+describe('build integrity', () => {
+  it('passes when all three renderer files are present and non-empty', () => {
+    const c = byId(runDiagnostics(healthyDeps(), fakeClock()).checks, 'build.integrity');
+    expect(c.status).toBe('pass');
+    expect(c.detail).toContain('abcdef123456');
+  });
+
+  it('fails, naming the file, when a renderer file is missing', () => {
+    const deps = healthyDeps({
+      build: {
+        rendererPath: 'C:\\app\\dist\\renderer',
+        stamp: 'abc123',
+        expectedFiles: ['index.html', 'app.js', 'app.css'],
+        // app.css failed to copy — the "logo only, unstyled" shape.
+        fileSize: (name) => (name === 'app.css' ? null : 1000),
+      },
+    });
+    const c = byId(runDiagnostics(deps, fakeClock()).checks, 'build.integrity');
+    expect(c.status).toBe('fail');
+    expect(c.detail).toContain('app.css');
+    // The consequence is stated, because "missing" alone does not tell a tester
+    // what they will see.
+    expect(c.detail).toMatch(/blank or unstyled/);
+  });
+
+  it('fails when a file exists but is zero bytes', () => {
+    // A truncated write is worse than a missing file: the request succeeds and
+    // the browser then has nothing to execute.
+    const deps = healthyDeps({
+      build: {
+        rendererPath: 'C:\\app\\dist\\renderer',
+        stamp: 'abc123',
+        expectedFiles: ['index.html', 'app.js', 'app.css'],
+        fileSize: (name) => (name === 'app.js' ? 0 : 5000),
+      },
+    });
+    const c = byId(runDiagnostics(deps, fakeClock()).checks, 'build.integrity');
+    expect(c.status).toBe('fail');
+    expect(c.detail).toContain('empty');
+    expect(c.detail).toContain('app.js');
+  });
+
+  it('names every missing file, not just the first', () => {
+    const deps = healthyDeps({
+      build: {
+        rendererPath: 'C:\\app\\dist\\renderer',
+        stamp: 'abc123',
+        expectedFiles: ['index.html', 'app.js', 'app.css'],
+        fileSize: () => null,
+      },
+    });
+    const c = byId(runDiagnostics(deps, fakeClock()).checks, 'build.integrity');
+    expect(c.detail).toContain('index.html');
+    expect(c.detail).toContain('app.js');
+    expect(c.detail).toContain('app.css');
+  });
+
+  it('skips rather than passing when there is no renderer to inspect', () => {
+    // Absence of inspection must never be reported as success.
+    const deps = healthyDeps();
+    delete deps.build;
+    const c = byId(runDiagnostics(deps, fakeClock()).checks, 'build.integrity');
+    expect(c.status).toBe('skip');
+  });
+
+  it('does not leak the full profile path', () => {
+    const deps = healthyDeps({
+      build: {
+        rendererPath: 'C:\\Users\\alice\\AppData\\Local\\Programs\\Phutrue\\dist\\renderer',
+        stamp: 'abc123',
+        expectedFiles: ['app.js'],
+        fileSize: () => null,
+      },
+    });
+    const c = byId(runDiagnostics(deps, fakeClock()).checks, 'build.integrity');
+    expect(c.detail).not.toContain('alice');
+  });
+});

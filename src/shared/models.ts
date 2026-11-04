@@ -242,4 +242,14 @@ export interface AppInfo {
   secureStorageAvailable: boolean;
   /** Set when secureStorageAvailable is false, explaining why. */
   secureStorageReason: string | null;
+  /**
+   * Hash of the renderer files this build produced.
+   *
+   * Baked into the main bundle at build time (see scripts/build.mjs). A running
+   * window reports it so a tester can confirm the app they are looking at is the
+   * build they just made, rather than a stale installed copy.
+   */
+  buildStamp: string;
+  /** Absolute path of the renderer directory being served. */
+  rendererPath: string;
 }

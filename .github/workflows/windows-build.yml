@@ -75,10 +75,11 @@ jobs:
             exit $LASTEXITCODE
           }
         env:
-          # electron-builder publishes unless told not to. This workflow must
-          # never create a release; the artifact upload below is the delivery
-          # mechanism, and it is scoped to this run.
-          GH_TOKEN: ''
+          # No code signing certificate exists yet. Setting this stops
+          # electron-builder from searching for one and failing obscurely.
+          # Publishing is disabled in the `dist` script itself with
+          # `--publish never`, because CI detection alone would otherwise make
+          # electron-builder try to create a GitHub release.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
       - name: Locate the installer

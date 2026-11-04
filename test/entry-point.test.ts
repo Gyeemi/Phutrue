@@ -328,3 +328,29 @@ describe('startup reports the served renderer', () => {
     expect(body).toContain('__BUILD_STAMP__');
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * Packaging never publishes
+ *
+ * electron-builder enables implicit publishing when it detects CI. That is a
+ * standing requirement in this project - nothing may be published without
+ * approval - and it also broke a build: the installer was created and then the
+ * run failed while trying to create a GitHub release with no token.
+ * ------------------------------------------------------------------ */
+
+describe('the dist script cannot publish', () => {
+  it('passes --publish never', () => {
+    expect(PKG.scripts['dist']).toContain('--publish never');
+  });
+
+  it('builds a 64-bit Windows target', () => {
+    expect(PKG.scripts['dist']).toContain('--win');
+    expect(PKG.scripts['dist']).toContain('--x64');
+  });
+
+  it('checks assets and builds before packaging', () => {
+    const dist = PKG.scripts['dist'] ?? '';
+    expect(dist.indexOf('assets:check')).toBeLessThan(dist.indexOf('electron-builder'));
+    expect(dist.indexOf('build')).toBeLessThan(dist.indexOf('electron-builder'));
+  });
+});

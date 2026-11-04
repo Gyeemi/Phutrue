@@ -12,7 +12,7 @@
  * than leaving a blank screen.
  */
 
-import { app, BrowserWindow, clipboard, dialog, session, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, Menu, session, shell } from 'electron';
 import path from 'node:path';
 
 import type { AppInfo } from '../shared/models.js';
@@ -146,6 +146,22 @@ if (!gotLock) {
     }
 
     const svc = services;
+
+    /*
+     * Remove Electron's default application menu.
+     *
+     * Left in place it draws a File/Edit/View/Window menu bar across the top of
+     * every window. None of its items do anything useful here — the default
+     * "Reload" and "Toggle Developer Tools" are the only ones with an effect,
+     * and both are reachable with a keyboard shortcut — but it makes the app
+     * look like an unfinished shell and steals vertical space from the account
+     * screen.
+     *
+     * Removed rather than hidden: `autoHideMenuBar` still reveals it on Alt, and
+     * a menu that is invisible until a keypress is a worse surprise than no
+     * menu at all.
+     */
+    Menu.setApplicationMenu(null);
 
     // Serve the renderer and lock down the session.
     serveRenderer(RENDERER_DIR);

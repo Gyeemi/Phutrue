@@ -44,10 +44,34 @@ export function App(): JSX.Element {
        * a missing settings row is recoverable and should not block the app, while
        * a failure to read app information means the main process is unhealthy.
        */
-      const [info, settings] = await Promise.all([
-        callResult('app:info', undefined),
-        callResult('settings:get', undefined),
-      ]);
+      /*
+       * The try/catch is load-bearing, not defensive noise.
+       *
+       * `callResult` returns a Result for a *handled* failure, but it can still
+       * reject: the bridge itself can throw (a preload that half-loaded, an IPC
+       * send that fails). Without this, a rejection left the shell on the
+       * loading screen permanently — a window showing the logo and the word
+       * "Starting…" and nothing else, with no way for the user to tell it apart
+       * from a hang. That is precisely the shape of the blank-window report.
+       */
+      let info: Awaited<ReturnType<typeof callResult<'app:info'>>>;
+      let settings: Awaited<ReturnType<typeof callResult<'settings:get'>>>;
+      try {
+        [info, settings] = await Promise.all([
+          callResult('app:info', undefined),
+          callResult('settings:get', undefined),
+        ]);
+      } catch (err) {
+        if (cancelled) return;
+        setState({
+          status: 'error',
+          message:
+            err instanceof Error
+              ? `Phutrue could not start: ${err.message}`
+              : 'Phutrue could not start: the application bridge failed.',
+        });
+        return;
+      }
       if (cancelled) return;
 
       if (!info.ok) {

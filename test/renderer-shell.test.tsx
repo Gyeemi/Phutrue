@@ -176,6 +176,32 @@ describe('degraded states', () => {
     expect(alert?.textContent).toContain('Database is locked.');
   });
 
+  it('reports a bridge read that throws, instead of hanging on the boot screen', async () => {
+    /*
+     * Regression test for the shape of the blank-window report.
+     *
+     * `callResult` returns a Result for handled failures, but the bridge call
+     * itself can reject — a half-loaded preload, a failed IPC send. There was no
+     * catch, so the rejection left the shell on the loading screen forever: a
+     * window with the logo and the word "Starting…" and nothing else, which a
+     * user cannot distinguish from a freeze.
+     */
+    setBridge({
+      platform: 'win32',
+      invoke: async () => {
+        throw new Error('IPC send failed');
+      },
+      on: () => () => {},
+    });
+    await render();
+
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toContain('could not start');
+    // And critically: not still stuck on the loading state.
+    expect(document.body.textContent).not.toContain('Starting…');
+  });
+
   it('warns when secure storage is unavailable', async () => {
     setBridge({
       platform: 'win32',

@@ -269,7 +269,7 @@ them yet:
 | `test/ipc-router.test.ts` | 18 | allowlist, sender authorization, validation, error and log hygiene |
 | `test/protocol.test.ts` | 43 | `app://` path containment (incl. Windows trailing-dot/space/ADS) and the Content-Type allowlist, driven through the real handler |
 | `test/bundle-smoke.test.ts` | 12 | the **built** `dist/renderer/app.js` mounts the complete boot screen in a real DOM — the blank-screen guard that source-level tests cannot provide |
-| `test/renderer-shell.test.tsx` | 14 | the shell renders in every state; no blank screen; theme applied |
+| `test/renderer-shell.test.tsx` | 15 | the shell renders in every state; no blank screen; theme applied |
 | `test/diagnostics.test.ts` | 54 | every diagnostics check, every degraded path, and sentinel-injection proof that no secret reaches the report |
 | `test/diagnostics-view.test.tsx` | 11 | the renderer half of diagnostics: bridge present, no undocumented members, clipboard routed through main |
 | `test/csp.test.ts` | 31 | CSP restrictiveness, header/meta agreement, `app://` loading assumptions |
@@ -281,7 +281,7 @@ them yet:
 | `test/signin-machine.test.ts` | 21 | single-flight, cancellation, and late events from dead attempts |
 | `test/account-screen.test.tsx` | 41 | provider selection, progress, waiting, cancel, success, failures, removal |
 
-Total: **505 tests in 17 files.**
+Total: **506 tests in 17 files.**
 
 ### 5.1 The OAuth flow, and why it is shaped this way
 

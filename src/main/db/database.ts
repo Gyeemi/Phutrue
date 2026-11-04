@@ -43,49 +43,54 @@ export function openDatabase(
   /*
    * Recover from a database that a failed migration left behind.
    *
-   * A migration runs inside a transaction, so the schema rolls back - but the
+   * A migration runs inside a transaction, so its schema rolls back - but the
    * FILE remains, and `schema_version` is still 0. On the next launch version 1
    * runs again and, because it uses plain CREATE TABLE, collides with whatever
    * survived. The result is an installation that cannot start, ever, with no
    * in-app way out: the user would have to know to go and delete a file under
    * AppData.
    *
-   * The rule "never destroy user data" still applies, so this only takes the
-   * recovery path when the database provably holds nothing: no accounts, no
-   * messages, no drafts, and no outbox rows. If there is any mail or account in
-   * there, it is moved aside intact instead, and the error is raised with the
-   * reason - never silently discarded.
-   */
-  const db = new DatabaseSync(file);
-
-  // WAL keeps readers from blocking the writer during a long sync, and survives
-  // an abrupt process kill without corrupting the database. Not applicable to
-  // in-memory databases.
-  if (file !== ':memory:') {
-    db.exec('PRAGMA journal_mode = WAL');
-    db.exec('PRAGMA synchronous = NORMAL');
-  }
-
-  // Enforce foreign keys — SQLite defaults them off, which silently allows
-  // orphaned messages to accumulate.
-  db.exec('PRAGMA foreign_keys = ON');
-  // Wait rather than fail immediately if another connection holds a lock.
-  db.exec('PRAGMA busy_timeout = 5000');
-
-  /*
-   * Migrate, and if that fails on a database that provably holds nothing, start
-   * over rather than leaving an installation that can never run again.
+   * Recovery only happens when the database provably holds nothing: no accounts,
+   * no messages, no drafts, no queued mail, no secrets. With real data present
+   * the error is raised and the file is left exactly where it is.
    *
-   * This is the exact failure a first install hit: a migration rolled back, but
-   * its FILE stayed behind with partial schema, and every later launch failed
-   * the same way with no in-app route out. Recovering is only acceptable because
-   * `holdsNoUserData` has checked that there is nothing to lose - with real
-   * accounts or mail present, the error is raised and the file is left alone.
+   * The connection is closed on every path that fails. This matters on Windows,
+   * which will not delete or rename a file while a handle is open: a leaked
+   * connection turns one failed start into a database that is locked for the
+   * rest of the session.
    */
+  const open = (): Db => {
+    const fresh = new DatabaseSync(file);
+
+    // WAL keeps readers from blocking the writer during a long sync, and
+    // survives an abrupt process kill without corrupting the database.
+    fresh.exec('PRAGMA journal_mode = WAL');
+    fresh.exec('PRAGMA synchronous = NORMAL');
+    // Enforce foreign keys — SQLite defaults them off, which silently allows
+    // orphaned messages to accumulate.
+    fresh.exec('PRAGMA foreign_keys = ON');
+    // Wait rather than fail immediately if another connection holds a lock.
+    fresh.exec('PRAGMA busy_timeout = 5000');
+    return fresh;
+  };
+
+  let db: Db | null = null;
   try {
+    db = open();
     migrate(db);
+
+    // A schema that claims a version but has lost its tables cannot be used.
+    // This is a real failure mode; it must not be discovered by the user later.
+    verifySchema(db);
+    return db;
   } catch (err) {
-    db.close();
+    db?.close();
+
+    /*
+     * If it failed because the file cannot be renamed, the connection handle is
+     * gone but the error is still the user's problem - so rethrow with context
+     * rather than trying to recover a second time.
+     */
     if (!holdsNoUserData(file)) {
       /*
        * There is mail or an account in here, so nothing is moved or deleted.
@@ -107,17 +112,55 @@ export function openDatabase(
     // know, and a support report needs the path.
     options.onQuarantine?.(movedTo);
 
-    const fresh = new DatabaseSync(file);
-    if (file !== ':memory:') {
-      fresh.exec('PRAGMA journal_mode = WAL');
-      fresh.exec('PRAGMA synchronous = NORMAL');
+    const rebuilt = open();
+    try {
+      migrate(rebuilt);
+      verifySchema(rebuilt);
+    } catch (again) {
+      rebuilt.close();
+      throw again;
     }
-    fresh.exec('PRAGMA foreign_keys = ON');
-    fresh.exec('PRAGMA busy_timeout = 5000');
-    migrate(fresh);
-    return fresh;
+    return rebuilt;
   }
-  return db;
+}
+
+/**
+ * Confirm the schema is complete, not merely that the file opened.
+ *
+ * A database can report a schema version while missing the tables that version
+ * promised - a half-applied migration, or a file copied mid-write. Reading
+ * `schema_version` alone would not notice, and the user would meet the problem
+ * as a crash on the first query instead of a clear message at start-up.
+ */
+const REQUIRED_TABLES = [
+  'accounts', 'secrets', 'folders', 'messages', 'attachments',
+  'drafts', 'outbox', 'settings', 'schema_version',
+] as const;
+
+export function verifySchema(db: Db): void {
+  const rows = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+    .all() as { name: string }[];
+  const present = new Set(rows.map((r) => r.name));
+
+  const missing = REQUIRED_TABLES.filter((t) => !present.has(t));
+  if (missing.length > 0) {
+    throw new AppError(
+      ErrorCodes.DB_ERROR,
+      `The local database is incomplete: missing ${missing.join(', ')}.`
+    );
+  }
+
+  const { v } = db.prepare('SELECT MAX(version) AS v FROM schema_version').get() as {
+    v: number | null;
+  };
+  const latest = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;
+  if (v !== latest) {
+    throw new AppError(
+      ErrorCodes.DB_ERROR,
+      `The local database is at version ${String(v)}, but this build needs ${latest}.`
+    );
+  }
 }
 
 /**

@@ -212,7 +212,7 @@ describe('full-text search', () => {
  * version and the path but not the cause, so nothing could be concluded from it.
  * ------------------------------------------------------------------ */
 
-import { mkdtempSync, rmSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -339,20 +339,90 @@ describe('a normal start is unaffected by the recovery path', () => {
 
 describe('the failure message names the cause', () => {
   it('includes the SQLite complaint, not just the version', () => {
-    // A file that is not a database at all: the message must say so.
+    // `secrets` collides with migration 1, so the migration fails for a reason
+    // SQLite names - and the message must repeat that name rather than replace
+    // it with "migration failed".
     const { dir, file } = tmpDb();
     try {
-      writeFileSync(file, 'this is definitely not a SQLite file');
+      const shell = new DatabaseSync(file);
+      shell.exec('CREATE TABLE secrets (ref TEXT PRIMARY KEY)');
+      shell.exec("INSERT INTO secrets (ref) VALUES ('keep-me')");
+      shell.close();
+
       let message = '';
       try {
         openDatabase(file);
       } catch (err) {
         message = (err as Error).message;
       }
-      expect(message).not.toBe('');
-      // "file is not a database" is what SQLite itself says; the point is that
-      // the app repeats it instead of replacing it with something vague.
-      expect(message).toMatch(/not a database|malformed|encrypted|\[ERR_SQLITE/i);
+
+      expect(message).toMatch(/already exists/);
+      // And the version, so the log says where it stopped.
+      expect(message).toMatch(/version 1/);
+      rmSync(dir, { recursive: true, force: true });
+    } catch (outer) {
+      throw outer;
+    }
+  });
+
+  it('keeps a database that holds a secret, rather than rebuilding it', () => {
+    // A `secrets` row can be a credential. It is user data even with no account
+    // rows, so the file must survive untouched.
+    const { dir, file } = tmpDb();
+    try {
+      const shell = new DatabaseSync(file);
+      shell.exec('CREATE TABLE secrets (ref TEXT PRIMARY KEY)');
+      shell.exec("INSERT INTO secrets (ref) VALUES ('keep-me')");
+      shell.close();
+
+      expect(() => openDatabase(file)).toThrow();
+
+      const check = new DatabaseSync(file, { readOnly: true });
+      expect(check.prepare('SELECT ref FROM secrets').get()).toEqual({ ref: 'keep-me' });
+      check.close();
+      expect(readdirSync(dir).some((f) => f.includes('unusable'))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('a schema that claims a version but has lost its tables', () => {
+  it('is rebuilt, because it holds nothing', () => {
+    const { dir, file } = tmpDb();
+    try {
+      // Version 1 recorded, but `messages` was never created: the state a
+      // half-applied migration or a mid-write file copy leaves behind. Reading
+      // schema_version alone would call this healthy.
+      const shell = new DatabaseSync(file);
+      shell.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+      shell.exec('INSERT INTO schema_version (version) VALUES (1)');
+      shell.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY)');
+      shell.close();
+
+      const db = openDatabase(file);
+      // Rebuilt to a complete schema rather than handed to the user broken.
+      expect(db.prepare('SELECT COUNT(*) AS n FROM messages').get()).toEqual({ n: 0 });
+      expect(db.prepare('SELECT MAX(version) AS v FROM schema_version').get()).toEqual({
+        v: MIGRATIONS[MIGRATIONS.length - 1]!.version,
+      });
+      db.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('is refused when it holds data, rather than silently replaced', () => {
+    const { dir, file } = tmpDb();
+    try {
+      const shell = new DatabaseSync(file);
+      shell.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+      shell.exec('INSERT INTO schema_version (version) VALUES (1)');
+      shell.exec('CREATE TABLE accounts (id INTEGER PRIMARY KEY, email TEXT)');
+      shell.exec("INSERT INTO accounts (email) VALUES ('keep@example.com')");
+      shell.close();
+
+      expect(() => openDatabase(file)).toThrow(/left untouched/i);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

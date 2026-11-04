@@ -355,20 +355,26 @@ describe('architecture documentation matches the code', () => {
     expect(text).toContain(`wired for **${wired.length}**`);
   });
 
-  it('states a test total that is not obviously stale', async () => {
+  it('states a test total that matches the per-file table', async () => {
+    /*
+     * The header total and the per-file rows are two statements of the same
+     * fact, and they previously drifted apart (495 claimed, 505 actual) because
+     * the assertion only checked a loose lower bound. Now the table's own
+     * numbers must sum to the stated total, so an edit to either that is not
+     * mirrored is a failure.
+     */
     const text = await doc();
-    const match = /\*\*(\d+) tests in (\d+) files\.\*\*/.exec(text);
-    expect(match).not.toBeNull();
+    const total = /\*\*(\d+) tests in (\d+) files\.\*\*/.exec(text);
+    expect(total).not.toBeNull();
+    const claimedTests = Number(total?.[1]);
+    const claimedFiles = Number(total?.[2]);
 
-    const claimedTests = Number(match?.[1]);
-    const claimedFiles = Number(match?.[2]);
+    const rows = [...text.matchAll(/^\| `test\/[^`]+` \| (\d+) \|/gm)].map((m) => Number(m[1]));
+    expect(rows.length, 'the per-file table should have one row per test file').toBeGreaterThanOrEqual(15);
 
-    // A loose bound rather than exact equality: the document is updated with
-    // each checkpoint, and the value that matters is that it cannot be wildly
-    // out of date. Exact drift of a handful is a wording problem; being 300
-    // behind means a reader is being misled.
-    expect(claimedTests).toBeGreaterThan(400);
-    expect(claimedFiles).toBeGreaterThanOrEqual(15);
+    const summed = rows.reduce((a, b) => a + b, 0);
+    expect(summed, `table rows sum to ${summed}, header claims ${claimedTests}`).toBe(claimedTests);
+    expect(rows.length).toBe(claimedFiles);
   });
 
   it('documents the build.integrity check it added', async () => {

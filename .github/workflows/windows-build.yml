@@ -95,6 +95,7 @@ jobs:
           "name=$($exe.Name)" >> $env:GITHUB_OUTPUT
           $hash = (Get-FileHash -Algorithm SHA256 -Path $exe.FullName).Hash
           "sha256=$hash" >> $env:GITHUB_OUTPUT
+          "size=$($exe.Length)" >> $env:GITHUB_OUTPUT
           Write-Host "SHA256: $hash"
 
       # Verifying the *unpacked* build proves the packaged files are correct
@@ -169,90 +170,81 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      # The installer is also committed to the branch.
+      # Only the checksum is committed, not the installer.
       #
-      # This is not redundant with the artifact upload: artifact downloads
-      # redirect to Azure blob storage, which a client inspecting the run may be
-      # unable to reach. Git is the transport that always works, and the binary
-      # is the actual deliverable.
-      - name: Publish the installer to the branch
+      # The .exe is ~120 MB and GitHub rejects any file over 100 MB, so it
+      # cannot travel through a branch. The artifact upload above is how it
+      # reaches a person. A checksum is a few dozen bytes and is what lets them
+      # confirm the file they downloaded is the one this build produced, so that
+      # part does get committed.
+      - name: Publish checksum to the branch
         if: success()
         shell: pwsh
         run: |
           $dir = 'installers'
           New-Item -ItemType Directory -Force -Path $dir | Out-Null
           $name = '${{ steps.installer.outputs.name }}'
-          Copy-Item '${{ steps.installer.outputs.path }}' (Join-Path $dir $name)
-
           $hash = '${{ steps.installer.outputs.sha256 }}'
-          $size = (Get-Item (Join-Path $dir $name)).Length
+          $size = '${{ steps.installer.outputs.size }}'
+
+          "$hash  $name" | Out-File (Join-Path $dir "$name.sha256") -Encoding utf8 -NoNewline
           @"
           # Phutrue Windows installer
 
           | | |
           |---|---|
           | File | ``$name`` |
-          | Version | ${{ github.ref_name }} build |
           | Size | $size bytes |
           | SHA-256 | ``$hash`` |
           | Commit | ``${{ github.sha }}`` |
-          | Built on | windows-latest, x64 |
-          | Verified | packaged app and silently-installed app both rendered the account setup screen |
+          | Built and verified on | windows-latest, x64 |
+          | Verified | the packaged app **and** the silently-installed app both rendered the account setup screen |
 
-          This directory is written by CI on a successful Windows build. The
-          installer is unsigned, so Windows SmartScreen will warn on first run —
-          see docs/windows-verification.md for why that is expected.
+          ## Downloading it
+
+          The installer is too large for a git branch (GitHub caps files at 100 MB),
+          so it is delivered as a workflow artifact:
+
+          https://github.com/Gyeemi/Phutrue/actions/runs/${{ github.run_id }}
+
+          Open that run and download **phutrue-windows-installer** from the
+          Artifacts section at the bottom.
+
+          ## Verifying the download
+
+          ```powershell
+          Get-FileHash -Algorithm SHA256 ".\$name"
+          ```
+
+          Compare against the SHA-256 above. They must match exactly.
+
+          ## Installing
+
+          The installer is unsigned, so Windows SmartScreen shows
+          "Windows protected your PC" on first run. Choose **More info** then
+          **Run anyway**. This is expected — no Authenticode certificate is
+          configured yet (see docs/branding.md).
+
+          The assisted installer offers a welcome page, install location and
+          finish page. It installs per-user, so no administrator prompt.
+
+          The application then opens on the account setup screen with Gmail and
+          Microsoft cards. Sign-in itself needs `PHUTRUE_GOOGLE_CLIENT_ID` or
+          `PHUTRUE_MICROSOFT_CLIENT_ID` set, and OAuth has not yet been tested
+          against a real provider.
           "@ | Out-File (Join-Path $dir 'README.md') -Encoding utf8
 
           git config user.name 'phutrue-ci'
           git config user.email 'ci@users.noreply.github.com'
           git add $dir
-          git commit -m "release: Phutrue Windows installer ($hash) [skip ci]"
-          # actions/checkout leaves a detached HEAD, so name the destination
-          # explicitly; a bare `git push` has no upstream and fails.
+          git commit -m "build: record installer checksum $hash [skip ci]"
           git push origin "HEAD:${{ github.ref_name }}" 2>&1 | Tee-Object -FilePath push.log
           if ($LASTEXITCODE -ne 0) {
-            # Annotations are the one diagnostic channel readable remotely when
-            # artifacts and job logs are not.
             $msg = ((Get-Content push.log -Raw) -replace "`r?`n", ' | ')
             if ($msg.Length -gt 700) { $msg = $msg.Substring(0, 700) }
-            Write-Host "::error title=git push failed::$msg"
+            Write-Host "::error title=checksum push failed::$msg"
             exit 1
           }
-
-      # Kept even on failure: a failed run is exactly when these matter.
-      # On failure, publish the log to the branch itself.
-      #
-      # Artifacts and the job-log API both redirect to Azure blob storage, which
-      # an inspecting client may be unable to reach. Git is the transport that
-      # always works, and a failing assertion is worth a commit.
-      - name: Publish failure log to the branch
-        if: failure()
-        shell: pwsh
-        run: |
-          $out = 'ci-failure.txt'
-          "Commit: ${env:GITHUB_SHA}" | Out-File $out -Encoding utf8
-          "Runner: Windows $($env:ImageOS)" | Out-File $out -Append -Encoding utf8
-          "" | Out-File $out -Append -Encoding utf8
-          # `2>&1 | Out-File` so a non-zero exit does not abort the step before
-          # the output is written.
-          npx vitest run --reporter=verbose 2>&1 | Out-File $out -Append -Encoding utf8
-          "" | Out-File $out -Append -Encoding utf8
-          "--- node/npm ---" | Out-File $out -Append -Encoding utf8
-          "node $(node --version)" | Out-File $out -Append -Encoding utf8
-          "npm $(npm --version)" | Out-File $out -Append -Encoding utf8
-          "platform $([System.Environment]::OSVersion.VersionString)" | Out-File $out -Append -Encoding utf8
-          if (Test-Path dist-build.log) {
-            "" | Out-File $out -Append -Encoding utf8
-            "--- dist-build.log (tail 120) ---" | Out-File $out -Append -Encoding utf8
-            Get-Content dist-build.log -Tail 120 | Out-File $out -Append -Encoding utf8
-          }
-
-          git config user.name 'phutrue-ci'
-          git config user.email 'ci@users.noreply.github.com'
-          git add ci-failure.txt
-          git commit -m 'ci: Windows failure log [skip ci]'
-          git push origin "HEAD:${{ github.ref_name }}"
 
       - name: Upload diagnostics
         if: always()

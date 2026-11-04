@@ -54,7 +54,9 @@ jobs:
         run: npm run typecheck
 
       - name: Test
-        run: npm test
+        # `--reporter=verbose` puts each failing assertion in the step log, which
+        # is readable from the API without downloading artifacts.
+        run: npx vitest run --reporter=verbose
 
       - name: Asset checks
         run: npm run assets:check
@@ -156,11 +158,35 @@ jobs:
           retention-days: 14
 
       # Kept even on failure: a failed run is exactly when these matter.
+      # Captures the full log of a failed step as an artifact, because the API's
+      # log endpoint redirects to a host that may be unreachable for a client
+      # inspecting the run remotely.
+      - name: Capture logs on failure
+        if: failure()
+        shell: pwsh
+        run: |
+          $out = Join-Path $PWD 'failure-log.txt'
+          "Commit: $env:GITHUB_SHA" | Out-File $out
+          "Runner: $env:ImageOS" | Out-File $out -Append
+          # Re-run the suite so the failing assertion text lands in the file even
+          # if the step above was truncated in the web UI.
+          npx vitest run --reporter=verbose 2>&1 | Out-File $out -Append
+          Get-Content $out -Tail 200 | Write-Host
+
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phutrue-smoke-reports
+          path: failure-log.txt
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload smoke reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phutrue-smoke-json
           path: |
             smoke-report.json
             installed-smoke-report.json

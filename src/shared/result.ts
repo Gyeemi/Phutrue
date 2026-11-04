@@ -15,6 +15,10 @@ export const ErrorCodes = {
   SMTP_AUTH_FAILED: 'SMTP_AUTH_FAILED',
   SMTP_SEND_FAILED: 'SMTP_SEND_FAILED',
   OAUTH_FAILED: 'OAUTH_FAILED',
+  /** The flow needs a client ID that this build was not configured with. */
+  OAUTH_NOT_CONFIGURED: 'OAUTH_NOT_CONFIGURED',
+  /** The user closed the consent screen, or the browser never returned. */
+  OAUTH_CANCELLED: 'OAUTH_CANCELLED',
   NETWORK: 'NETWORK',
   CANCELLED: 'CANCELLED',
   INTERNAL: 'INTERNAL',

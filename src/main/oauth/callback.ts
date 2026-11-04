@@ -18,11 +18,6 @@
  *     (it is attacker-influenced text; it is mapped, not echoed).
  */
 
-export type CallbackResult =
-  | { kind: 'code'; code: string; state: string }
-  | { kind: 'error'; error: string; state: string | null }
-  | { kind: 'invalid'; reason: string };
-
 /**
  * Provider error codes reduced to a stable, safe category.
  *
@@ -53,6 +48,15 @@ const KNOWN_ERRORS: readonly OAuthErrorCode[] = [
   'server_error',
   'temporarily_unavailable',
 ];
+
+export type CallbackResult =
+  | { kind: 'code'; code: string; state: string }
+  /**
+   * `error` is always one of the known codes: `parseCallback` normalises the
+   * provider's value, so the provider's raw text never survives parsing.
+   */
+  | { kind: 'error'; error: OAuthErrorCode; state: string | null }
+  | { kind: 'invalid'; reason: string };
 
 export function normaliseErrorCode(raw: string | null): OAuthErrorCode {
   if (!raw) return 'unknown';

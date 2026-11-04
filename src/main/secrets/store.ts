@@ -114,7 +114,18 @@ export function credentialRef(accountId: number): string {
   return `account:${accountId}:secret`;
 }
 
-// NOTE: there is deliberately no `refreshTokenRef()` yet. OAuth is not
-// implemented, and shipping an unused key generator would invite the assumption
-// that it is. Add it together with the OAuth flow in milestone 3, next to the
-// code that consumes it.
+/**
+ * Stable reference key for an account's OAuth credential bundle.
+ *
+ * The access token, refresh token and ID token are stored together as one JSON
+ * object under a single key, so they are written and replaced atomically. Storing
+ * them under three keys would allow a crash between writes to leave an access
+ * token with no matching refresh token, which is unrecoverable without asking
+ * the user to sign in again.
+ *
+ * The value is encrypted by safeStorage before it reaches the database; this key
+ * names the row, it is not itself secret.
+ */
+export function oauthTokenRef(accountId: number): string {
+  return `account:${accountId}:oauth`;
+}

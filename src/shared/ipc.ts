@@ -18,6 +18,8 @@ import type {
   AppInfo,
   DiagnosticsReport,
   Draft,
+  OAuthAccountState,
+  OAuthProvider,
   Folder,
   MessageDetail,
   MessageSummary,
@@ -155,6 +157,32 @@ export interface IpcChannels {
   /** Re-authenticate with a new password for an existing account. */
   'accounts:reconnect': { req: { id: number; password: string }; res: Account };
 
+  /* --- OAuth 2.0 ------------------------------------------------- *
+   * The system browser performs the sign-in. These channels carry URLs
+   * and secret-free account objects only; no token, verifier or code
+   * ever crosses this boundary.
+   * --------------------------------------------------------------- */
+  /**
+   * Begin a sign-in.
+   *
+   * Returns the authorisation URL for the *main process* to open via
+   * `shell.openExternal`, and an opaque attempt id. The renderer receives the
+   * URL only so it can display which provider it is waiting on; it never opens
+   * navigation itself.
+   */
+  'oauth:begin': {
+    req: { provider: OAuthProvider; label?: string };
+    res: { attemptId: string; provider: OAuthProvider; authorizationUrl: string; redirectUri: string };
+  };
+  /** Open the pending authorisation URL in the default browser. */
+  'oauth:open': { req: { attemptId: string }; res: void };
+  /** Await the callback and finish. Resolves to the secret-free account. */
+  'oauth:complete': { req: { attemptId: string; label?: string }; res: Account };
+  /** Abandon an in-flight attempt and release its port. */
+  'oauth:cancel': { req: { attemptId: string }; res: void };
+  /** Per-account credential state for the UI. Contains no tokens. */
+  'oauth:state': { req: { accountId: number }; res: OAuthAccountState };
+
   /* --- folders --- */
   'folders:list': { req: { accountId: number }; res: Folder[] };
   'folders:sync': { req: { accountId: number }; res: Folder[] };
@@ -209,6 +237,11 @@ export const CHANNELS = [
   'accounts:remove',
   'accounts:test',
   'accounts:reconnect',
+  'oauth:begin',
+  'oauth:open',
+  'oauth:complete',
+  'oauth:cancel',
+  'oauth:state',
   'folders:list',
   'folders:sync',
   'messages:list',

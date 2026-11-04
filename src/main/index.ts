@@ -12,7 +12,7 @@
  * than leaving a blank screen.
  */
 
-import { app, BrowserWindow, clipboard, dialog, session } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, session, shell } from 'electron';
 import path from 'node:path';
 
 import type { AppInfo } from '../shared/models.js';
@@ -25,6 +25,7 @@ import { createDraftRepo } from './db/repos/drafts.js';
 import { createFolderRepo } from './db/repos/folders.js';
 import { createMessageRepo } from './db/repos/messages.js';
 import { createSettingsRepo } from './db/repos/settings.js';
+import { createAccountService } from './oauth/account-service.js';
 import { registerRouter, unregisterRouter } from './ipc/router.js';
 import { registerAppScheme, serveRenderer } from './protocol.js';
 import { createSecretStore, type SecretStore } from './secrets/store.js';
@@ -60,6 +61,7 @@ interface Services {
   drafts: ReturnType<typeof createDraftRepo>;
   settings: ReturnType<typeof createSettingsRepo>;
   secrets: SecretStore;
+  oauth: ReturnType<typeof createAccountService>;
 }
 
 let services: Services | null = null;
@@ -67,6 +69,7 @@ let services: Services | null = null;
 function buildServices(): Services {
   const file = databasePath();
   const db = openDatabase(file);
+  const secrets = createSecretStore(db);
   return {
     db,
     databasePath: file,
@@ -75,7 +78,17 @@ function buildServices(): Services {
     messages: createMessageRepo(db),
     drafts: createDraftRepo(db),
     settings: createSettingsRepo(db),
-    secrets: createSecretStore(db),
+    secrets,
+    // One instance for the whole session: it owns the in-flight sign-in map, so
+    // a second instance would hold half the pending attempts.
+    oauth: createAccountService({
+      db,
+      secrets,
+      // The system default browser, never an embedded window.
+      openExternal: (url) => {
+        void shell.openExternal(url);
+      },
+    }),
   };
 }
 
@@ -157,6 +170,32 @@ if (!gotLock) {
           svc.settings.update(payload as Parameters<typeof svc.settings.update>[0]),
 
         'accounts:list': async () => svc.accounts.list(),
+
+        /* --- OAuth 2.0 --------------------------------------------- *
+         * The renderer never sees a token, code or verifier on any of
+         * these channels. `begin` returns the authorisation URL only so
+         * the UI can name the provider it is waiting on; `open` is what
+         * actually launches the system browser, and it happens in main.
+         * ----------------------------------------------------------- */
+        'oauth:begin': async (payload) => svc.oauth.beginSignIn(payload as { provider: 'google' | 'microsoft'; label?: string }),
+        'oauth:open': async (payload) => {
+          const { attemptId } = payload as { attemptId: string };
+          // Resolved from the live attempt, not from a renderer-supplied URL: a
+          // renderer-supplied URL would make this an "open anything" primitive.
+          svc.oauth.openInBrowser(attemptId);
+        },
+        'oauth:complete': async (payload) => {
+          const { attemptId, label } = payload as { attemptId: string; label?: string };
+          return svc.oauth.completeSignIn(attemptId, label);
+        },
+        'oauth:cancel': async (payload) => {
+          const { attemptId } = payload as { attemptId: string };
+          svc.oauth.cancel(attemptId);
+        },
+        'oauth:state': async (payload) => {
+          const { accountId } = payload as { accountId: number };
+          return svc.oauth.stateFor(accountId);
+        },
 
         // Remaining handlers arrive with milestones 3–6. A channel declared in
         // the contract but left unwired returns an explicit "not available"

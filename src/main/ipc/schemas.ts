@@ -29,6 +29,16 @@ const folderRole = z.enum(['inbox', 'sent', 'drafts', 'archive', 'spam', 'trash'
  * Account
  * ------------------------------------------------------------------ */
 
+/**
+ * An OAuth attempt handle.
+ *
+ * 32 lowercase hex characters, matching `hashState(...).slice(0, 32)` produced by
+ * the account service. Restricted by shape rather than merely by length: it is
+ * used as a lookup key, so accepting arbitrary text would let the renderer probe
+ * the in-flight map with surprising values.
+ */
+const oauthAttemptId = z.string().regex(/^[a-f0-9]{32}$/, 'invalid attempt');
+
 const accountDraftBase = z.object({
   label: text(120),
   email: text(320),
@@ -171,6 +181,28 @@ export const SCHEMAS = {
   'accounts:remove': z.object({ id }),
   'accounts:test': accountDraft,
   'accounts:reconnect': z.object({ id, password: z.string().min(1).max(4096) }),
+
+  /* --- OAuth 2.0 ------------------------------------------------- *
+   * No schema here accepts a token, code or verifier: those never cross
+   * the IPC boundary. `attemptId` is an opaque handle (a truncated state
+   * hash), validated by shape so it cannot inject anything.
+   * --------------------------------------------------------------- */
+  'oauth:begin': z
+    .object({
+      provider: z.enum(['google', 'microsoft']),
+      // Optional display label; bounded so it cannot be used as a payload.
+      label: text(120).optional(),
+    })
+    .strict(),
+  'oauth:open': z.object({ attemptId: oauthAttemptId }).strict(),
+  'oauth:complete': z
+    .object({
+      attemptId: oauthAttemptId,
+      label: text(120).optional(),
+    })
+    .strict(),
+  'oauth:cancel': z.object({ attemptId: oauthAttemptId }).strict(),
+  'oauth:state': z.object({ accountId: id }).strict(),
 
   'folders:list': z.object({ accountId: id }),
   'folders:sync': z.object({ accountId: id }),

@@ -243,7 +243,34 @@ Three changes follow from it:
 `loadURL` exists and loads `app://`, that no `data:` document can be navigated
 to, and that the two readiness literals stay equal.
 
-### 4.9 Build stamping
+### 4.9 Windows delivery, and what CI actually proves
+
+`.github/workflows/windows-build.yml` runs on `windows-latest` and does four
+things a Linux sandbox cannot: it runs the suite on Windows, builds the NSIS
+installer, launches the **packaged** app, and then silently installs the
+`.exe` and launches **that**. Both launches are asserted, not assumed: under
+`PHUTRUE_SMOKE=1` the app inspects its own live renderer and fails the build
+unless the window is on `app://phutrue`, React has committed, and the account
+setup text is present.
+
+Three constraints shaped it:
+
+- **The installer cannot travel through git.** It is ~120 MB and GitHub rejects
+  files over 100 MB. `compression: maximum` barely helps, because an Electron
+  installer is mostly Electron's own binaries. Delivery is therefore a workflow
+  artifact; only the SHA-256 is committed, under `installers/`.
+- **CI must never publish.** electron-builder enables implicit publishing when
+  it detects CI, and a build once failed at the very last step while trying to
+  create a GitHub release. `--publish never` is part of the `dist` script, not
+  an environment variable, so it cannot be lost.
+- **Zero installation friction for the user.** The point of the workflow is that
+  nobody has to run a sequence of commands to find out whether the app works.
+
+What it still does **not** prove: OAuth against a real Google or Microsoft
+account. Sign-in needs a client ID and a browser; the smoke test checks that the
+setup screen is displayed, not that consent completes.
+
+### 4.10 Build stamping
 
 `scripts/build.mjs` hashes the emitted renderer files (`index.html`, `app.js`,
 `app.css`) into a 12-character stamp and rebuilds the main bundle with that value

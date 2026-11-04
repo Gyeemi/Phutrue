@@ -150,6 +150,9 @@ describe('healthy is not the same as showing the setup screen', () => {
     expect(report.healthy).toBe(true);
     expect(report.ok).toBe(false);
     expect(report.missing.length).toBeGreaterThan(0);
+    // A working app must not exit non-zero because it is showing a different
+    // page. The exit code answers "did it start", not "which screen is this".
+    expect(report.exitCode).toBe(0);
   });
 
   it('is not healthy when the renderer never mounted', async () => {

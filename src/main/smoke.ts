@@ -65,7 +65,15 @@ export interface SmokeReport {
    * being shown.
    */
   healthy: boolean;
-  /** Process exit code the caller should use. */
+  /**
+   * Process exit code the caller should use.
+   *
+   * Driven by `healthy`, not `ok`. This is the difference between "did the
+   * application start?" and "did it show the screen we expected?". A database
+   * that already holds an account correctly shows the Accounts screen, so
+   * deriving the exit code from `ok` reported a working app as broken - and it
+   * did, in CI, before this was separated.
+   */
   exitCode: number;
 }
 
@@ -123,7 +131,7 @@ export async function inspectWindow(
     schemaVersion,
     quarantined,
     healthy,
-    exitCode: ok ? 0 : 1,
+    exitCode: healthy ? 0 : 1,
   };
 }
 

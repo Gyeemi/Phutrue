@@ -1,0 +1,206 @@
+/**
+ * Phutrue — main process entry point.
+ *
+ * Startup order matters and is deliberate:
+ *   1. Register the privileged app:// scheme  (must precede app ready)
+ *   2. Enforce a single instance
+ *   3. On ready: open the database, run migrations, build services
+ *   4. Serve the renderer, install the CSP, register the IPC router
+ *   5. Create the window
+ *
+ * Any failure before the window opens is fatal and reported to the user rather
+ * than leaving a blank screen.
+ */
+
+import { app, BrowserWindow, clipboard, dialog, session } from 'electron';
+import path from 'node:path';
+
+import type { AppInfo } from '../shared/models.js';
+import { AppError } from '../shared/result.js';
+import { openDatabase, type Db } from './db/database.js';
+import { electronDeps } from './diagnostics/electron.js';
+import { runDiagnostics } from './diagnostics/index.js';
+import { createAccountRepo } from './db/repos/accounts.js';
+import { createDraftRepo } from './db/repos/drafts.js';
+import { createFolderRepo } from './db/repos/folders.js';
+import { createMessageRepo } from './db/repos/messages.js';
+import { createSettingsRepo } from './db/repos/settings.js';
+import { registerRouter, unregisterRouter } from './ipc/router.js';
+import { registerAppScheme, serveRenderer } from './protocol.js';
+import { createSecretStore, type SecretStore } from './secrets/store.js';
+import { APP_USER_MODEL_ID, createMainWindow, installCsp } from './windows.js';
+
+/* ------------------------------------------------------------------ *
+ * Paths
+ * ------------------------------------------------------------------ */
+
+/**
+ * The build output lives at `dist/` inside the app root in both cases: the repo
+ * when unpackaged, the asar archive alone when packaged. `app.getAppPath()`
+ * resolves to whichever applies, so no branch is needed.
+ */
+const RENDERER_DIR = path.join(app.getAppPath(), 'dist', 'renderer');
+
+/** User data lives in %APPDATA%\Phutrue and is never inside the install dir. */
+function databasePath(): string {
+  return path.join(app.getPath('userData'), 'phutrue.db');
+}
+
+/* ------------------------------------------------------------------ *
+ * Services
+ * ------------------------------------------------------------------ */
+
+interface Services {
+  db: Db;
+  /** Absolute path to the SQLite file, needed by the diagnostics screen. */
+  databasePath: string;
+  accounts: ReturnType<typeof createAccountRepo>;
+  folders: ReturnType<typeof createFolderRepo>;
+  messages: ReturnType<typeof createMessageRepo>;
+  drafts: ReturnType<typeof createDraftRepo>;
+  settings: ReturnType<typeof createSettingsRepo>;
+  secrets: SecretStore;
+}
+
+let services: Services | null = null;
+
+function buildServices(): Services {
+  const file = databasePath();
+  const db = openDatabase(file);
+  return {
+    db,
+    databasePath: file,
+    accounts: createAccountRepo(db),
+    folders: createFolderRepo(db),
+    messages: createMessageRepo(db),
+    drafts: createDraftRepo(db),
+    settings: createSettingsRepo(db),
+    secrets: createSecretStore(db),
+  };
+}
+
+function appInfo(s: Services): AppInfo {
+  return {
+    version: app.getVersion(),
+    electron: process.versions['electron'] ?? 'unknown',
+    chrome: process.versions['chrome'] ?? 'unknown',
+    node: process.versions['node'] ?? 'unknown',
+    platform: process.platform,
+    secureStorageAvailable: s.secrets.available(),
+    secureStorageReason: s.secrets.reason(),
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Bootstrap
+ * ------------------------------------------------------------------ */
+
+// Step 1 — must run before `app.whenReady()`.
+registerAppScheme();
+
+// Step 2 — a second launch focuses the existing window instead of opening a
+// second copy that would contend for the SQLite file.
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  const trustedWindowIds = new Set<number>();
+  let mainWindow: BrowserWindow | null = null;
+
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(() => {
+    app.setAppUserModelId(APP_USER_MODEL_ID);
+
+    try {
+      services = buildServices();
+    } catch (err) {
+      const detail =
+        err instanceof AppError ? err.safeMessage : err instanceof Error ? err.message : String(err);
+      dialog.showErrorBox(
+        'Phutrue could not start',
+        `The local database could not be opened.\n\n${detail}\n\nLocation: ${databasePath()}`
+      );
+      app.quit();
+      return;
+    }
+
+    const svc = services;
+
+    // Serve the renderer and lock down the session.
+    serveRenderer(RENDERER_DIR);
+    installCsp(session.defaultSession);
+
+    // Step 4 — one router for every channel.
+    registerRouter(
+      {
+        'app:info': async () => appInfo(svc),
+
+        // The Windows self-test. Read-only apart from a throwaway write probe
+        // and an encrypt/decrypt round-trip; it never returns a secret.
+        'app:diagnostics': async () => runDiagnostics(electronDeps(svc.db, svc.databasePath)),
+
+        // See the contract for why the renderer cannot use navigator.clipboard.
+        'app:copyToClipboard': async (payload) => {
+          // The router has already validated and narrowed this to `{ text }`.
+          const { text } = payload as { text: string };
+          clipboard.writeText(text);
+        },
+
+        'settings:get': async () => svc.settings.get(),
+        'settings:update': async (payload) =>
+          svc.settings.update(payload as Parameters<typeof svc.settings.update>[0]),
+
+        'accounts:list': async () => svc.accounts.list(),
+
+        // Remaining handlers arrive with milestones 3–6. A channel declared in
+        // the contract but left unwired returns an explicit "not available"
+        // from the router rather than silently pretending to work.
+      },
+      // A sender is trusted only if it is one of our own windows.
+      (wc) => trustedWindowIds.has(wc.id)
+    );
+
+    // Step 5 — window.
+    mainWindow = createMainWindow({ trusted: trustedWindowIds });
+    mainWindow.on('closed', () => { mainWindow = null; });
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createMainWindow({ trusted: trustedWindowIds });
+        mainWindow.on('closed', () => { mainWindow = null; });
+      }
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+  });
+
+  app.on('before-quit', () => {
+    unregisterRouter();
+    if (services) {
+      try { services.db.close(); } catch { /* already closed */ }
+      services = null;
+    }
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Defence in depth
+ * ------------------------------------------------------------------ */
+
+app.on('web-contents-created', (_event, contents) => {
+  // The app never embeds a <webview>. Refuse any attempt to attach one, which
+  // is a classic escape hatch around a hardened BrowserWindow.
+  contents.on('will-attach-webview', (event) => event.preventDefault());
+
+  // Belt and braces: `setWindowOpenHandler` is also installed per window in
+  // windows.ts, but every web contents in the process is covered here.
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+});

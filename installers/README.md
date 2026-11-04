@@ -3,19 +3,19 @@
 | | |
 |---|---|
 | File | `Phutrue-Setup-0.1.1-x64.exe` |
-| Size | 125544895 bytes |
-| SHA-256 | `591356B621321E0E1E3FA25AE3CBA8C3603EB882D9CB7EBCB2B53D4A501EA364` |
-| Commit | `a406a3068ba6e5d3dbe255e4352ad5edf711bb42` |
+| Size | 125544866 bytes |
+| SHA-256 | `3663075E39C25D317DEA3774CA2221EAD9864F4110529C5B7E23EDCE5B7AEB78` |
+| Commit | `02fde0462b5a6896268ec2b30e629164bdfd200e` |
 | Built and verified on | windows-latest, x64 |
 | Verified | the packaged app **and** the silently-installed app both rendered the account setup screen |
-| Recovery verified | starts normally on a database left behind by a failed migration, setting it aside intact |
+| Recovery verified | starts on a half-migrated database that already holds an account, completes the migration in place and keeps the account |
 
 ## Downloading it
 
 The installer is too large for a git branch (GitHub caps files at 100 MB),
 so it is delivered as a workflow artifact:
 
-https://github.com/Gyeemi/Phutrue/actions/runs/41817717896
+https://github.com/Gyeemi/Phutrue/actions/runs/41818218814
 
 Open that run and download **phutrue-windows-installer** from the
 Artifacts section at the bottom.

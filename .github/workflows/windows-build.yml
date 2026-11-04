@@ -145,71 +145,74 @@ jobs:
       # in the table, so the file could not simply be discarded. Migrations used
       # plain CREATE TABLE, so they re-created an existing object and threw on
       # every launch, forever. This step builds that database before launch.
+      # The reported bug, reproduced exactly.
+      #
+      # A real install failed with "table accounts already exists" while
+      # schema_version still said 0: a half-applied migration, with an account row
+      # already present, so the file could not simply be discarded. Every
+      # migration used plain CREATE TABLE, so it re-created an existing object and
+      # threw on every launch, forever. This builds that database before launch.
+      #
+      # The helper scripts are base64 because embedding JavaScript inside a YAML
+      # block inside a PowerShell here-string is three levels of quoting, and the
+      # terminator rules for a here-string (column 0) do not survive YAML
+      # indentation - the first attempt silently failed to write the script.
       - name: Start on a half-migrated database that already holds an account
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $log = Join-Path $PWD 'half-migrated.log'
+          function Note($text) { $text | Out-File -FilePath $log -Append -Encoding utf8 }
+
           try {
             $userData = Join-Path $env:APPDATA 'Phutrue'
             New-Item -ItemType Directory -Force -Path $userData | Out-Null
             $dbPath = Join-Path $userData 'phutrue.db'
             Remove-Item -Force -ErrorAction SilentlyContinue $dbPath, "$dbPath-wal", "$dbPath-shm"
 
-            $seed = @'
-            const { DatabaseSync } = require('node:sqlite');
-            const db = new DatabaseSync(process.argv[1]);
-            db.exec('PRAGMA journal_mode = WAL');
-            db.exec("CREATE TABLE accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT NOT NULL, email TEXT NOT NULL, display_name TEXT NOT NULL DEFAULT '', auth_kind TEXT NOT NULL, oauth_provider TEXT, imap_host TEXT NOT NULL, imap_port INTEGER NOT NULL, imap_secure INTEGER NOT NULL DEFAULT 1, smtp_host TEXT NOT NULL, smtp_port INTEGER NOT NULL, smtp_secure INTEGER NOT NULL DEFAULT 1, smtp_user TEXT, sync_state TEXT NOT NULL DEFAULT 'idle', last_error TEXT, last_synced_at INTEGER, created_at INTEGER NOT NULL)");
-            db.exec("INSERT INTO accounts (label, email, auth_kind, imap_host, imap_port, smtp_host, smtp_port, created_at) VALUES ('Existing', 'existing@example.com', 'password', 'imap.example.com', 993, 'smtp.example.com', 587, 1)");
-            db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
-            db.exec('INSERT INTO schema_version (version) VALUES (0)');
-            db.close();
-            console.log('seeded');
-          '@
-            $seed | Out-File -FilePath (Join-Path $PWD 'seed.cjs') -Encoding utf8
-            & node (Join-Path $PWD 'seed.cjs') $dbPath *>> $log
-            if ($LASTEXITCODE -ne 0) { throw "seeding failed with $LASTEXITCODE" }
+            $seed = Join-Path $PWD 'seed.cjs'
+            [IO.File]::WriteAllText($seed, [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('Y29uc3QgeyBEYXRhYmFzZVN5bmMgfSA9IHJlcXVpcmUoJ25vZGU6c3FsaXRlJyk7CmNvbnN0IGRiID0gbmV3IERhdGFiYXNlU3luYyhwcm9jZXNzLmFyZ3ZbMl0pOwpkYi5leGVjKCdQUkFHTUEgam91cm5hbF9tb2RlID0gV0FMJyk7CmNvbnN0IGNvbHMgPSBbCiAgJ2lkIElOVEVHRVIgUFJJTUFSWSBLRVkgQVVUT0lOQ1JFTUVOVCcsICJsYWJlbCBURVhUIE5PVCBOVUxMIiwgImVtYWlsIFRFWFQgTk9UIE5VTEwiLAogICJkaXNwbGF5X25hbWUgVEVYVCBOT1QgTlVMTCBERUZBVUxUICcnIiwgImF1dGhfa2luZCBURVhUIE5PVCBOVUxMIiwgJ29hdXRoX3Byb3ZpZGVyIFRFWFQnLAogICdpbWFwX2hvc3QgVEVYVCBOT1QgTlVMTCcsICdpbWFwX3BvcnQgSU5URUdFUiBOT1QgTlVMTCcsICdpbWFwX3NlY3VyZSBJTlRFR0VSIE5PVCBOVUxMIERFRkFVTFQgMScsCiAgJ3NtdHBfaG9zdCBURVhUIE5PVCBOVUxMJywgJ3NtdHBfcG9ydCBJTlRFR0VSIE5PVCBOVUxMJywgJ3NtdHBfc2VjdXJlIElOVEVHRVIgTk9UIE5VTEwgREVGQVVMVCAxJywKICAnc210cF91c2VyIFRFWFQnLCAic3luY19zdGF0ZSBURVhUIE5PVCBOVUxMIERFRkFVTFQgJ2lkbGUnIiwgJ2xhc3RfZXJyb3IgVEVYVCcsCiAgJ2xhc3Rfc3luY2VkX2F0IElOVEVHRVInLCAnY3JlYXRlZF9hdCBJTlRFR0VSIE5PVCBOVUxMJywKXTsKZGIuZXhlYygnQ1JFQVRFIFRBQkxFIGFjY291bnRzICgnICsgY29scy5qb2luKCcsICcpICsgJyknKTsKZGIucHJlcGFyZSgiSU5TRVJUIElOVE8gYWNjb3VudHMgKGxhYmVsLCBlbWFpbCwgYXV0aF9raW5kLCBpbWFwX2hvc3QsIGltYXBfcG9ydCwgc210cF9ob3N0LCBzbXRwX3BvcnQsIGNyZWF0ZWRfYXQpIFZBTFVFUyAoPyw/LD8sPyw/LD8sPyw/KSIpCiAgLnJ1bignRXhpc3RpbmcnLCAnZXhpc3RpbmdAZXhhbXBsZS5jb20nLCAncGFzc3dvcmQnLCAnaW1hcC5leGFtcGxlLmNvbScsIDk5MywgJ3NtdHAuZXhhbXBsZS5jb20nLCA1ODcsIDEpOwpkYi5leGVjKCdDUkVBVEUgVEFCTEUgc2NoZW1hX3ZlcnNpb24gKHZlcnNpb24gSU5URUdFUiBOT1QgTlVMTCknKTsKZGIuZXhlYygnSU5TRVJUIElOVE8gc2NoZW1hX3ZlcnNpb24gKHZlcnNpb24pIFZBTFVFUyAoMCknKTsKZGIuY2xvc2UoKTsKY29uc29sZS5sb2coJ3NlZWRlZCcpOwo=')))
+            & node $seed $dbPath *>> $log
+            if ($LASTEXITCODE -ne 0) { throw "seeding exited $LASTEXITCODE" }
             if (-not (Test-Path $dbPath)) { throw 'the seeded database was not created' }
+            Note "seeded a half-migrated database with one account"
 
             $app = Join-Path $PWD 'release\win-unpacked\Phutrue.exe'
+            if (-not (Test-Path $app)) { throw "packaged app not found at $app" }
             $report = Join-Path $PWD 'recovered-smoke-report.json'
-            $stderrFile = Join-Path $PWD 'app-stderr.txt'
-            Remove-Item -Force -ErrorAction SilentlyContinue $report, $stderrFile
+            $errFile = Join-Path $PWD 'app-stderr.txt'
+            $outFile = Join-Path $PWD 'app-stdout.txt'
+            Remove-Item -Force -ErrorAction SilentlyContinue $report, $errFile, $outFile
             $env:PHUTRUE_SMOKE = '1'
             $env:PHUTRUE_SMOKE_OUT = $report
 
             $proc = Start-Process -FilePath $app -PassThru -NoNewWindow `
-              -RedirectStandardError $stderrFile -RedirectStandardOutput (Join-Path $PWD 'app-stdout.txt')
+              -RedirectStandardError $errFile -RedirectStandardOutput $outFile
             if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw 'start-up timed out after 90s' }
-            "exit code: $($proc.ExitCode)" | Out-File -FilePath $log -Append -Encoding utf8
-            if (Test-Path $stderrFile) { "stderr:" | Out-File $log -Append; Get-Content $stderrFile | Out-File $log -Append }
+            Note "app exit code: $($proc.ExitCode)"
+            if (Test-Path $errFile) { Note '--- app stderr ---'; Get-Content $errFile | Out-File -Append -FilePath $log }
+            if (Test-Path $outFile) { Note '--- app stdout ---'; Get-Content $outFile | Out-File -Append -FilePath $log }
 
-            if ($proc.ExitCode -ne 0) { throw "app exited $($proc.ExitCode) on a half-migrated database - the reported bug" }
+            if ($proc.ExitCode -ne 0) { throw "app exited $($proc.ExitCode) on a half-migrated database - this is the reported bug" }
             if (-not (Test-Path $report)) { throw 'no smoke report was written' }
             $json = Get-Content $report -Raw | ConvertFrom-Json
-            $json | ConvertTo-Json -Depth 5 | Out-File -FilePath $log -Append
+            Note ($json | ConvertTo-Json -Depth 5)
             if (-not $json.ok) { throw "smoke failed: missing=$($json.missing -join ', ')" }
             if ($json.schemaVersion -lt 1) { throw "schema version was $($json.schemaVersion)" }
 
             $aside = Get-ChildItem -Path $userData -Filter 'phutrue.db.unusable-*' -ErrorAction SilentlyContinue
             if ($aside) { throw "database was replaced instead of completed: $($aside.Name)" }
 
-            $check = @'
-            const { DatabaseSync } = require('node:sqlite');
-            const db = new DatabaseSync(process.argv[1], { readOnly: true });
-            const n = db.prepare('SELECT COUNT(*) AS n FROM accounts').get().n;
-            const v = db.prepare('SELECT MAX(version) AS v FROM schema_version').get().v;
-            console.log('RESULT ' + n + ' ' + v);
-          '@
-            $check | Out-File -FilePath (Join-Path $PWD 'check.cjs') -Encoding utf8
-            $out = & node (Join-Path $PWD 'check.cjs') $dbPath
-            "check: $out" | Out-File -FilePath $log -Append
-            $line = ($out | Select-String 'RESULT').ToString().Trim() -split '\s+'
-            if ([int]$line[1] -ne 1) { throw "existing account was lost: found $($line[1])" }
-            if ([int]$line[2] -lt 1) { throw "schema version was not recorded: $($line[2])" }
+            $check = Join-Path $PWD 'check.cjs'
+            [IO.File]::WriteAllText($check, [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('Y29uc3QgeyBEYXRhYmFzZVN5bmMgfSA9IHJlcXVpcmUoJ25vZGU6c3FsaXRlJyk7CmNvbnN0IGRiID0gbmV3IERhdGFiYXNlU3luYyhwcm9jZXNzLmFyZ3ZbMl0sIHsgcmVhZE9ubHk6IHRydWUgfSk7CmNvbnN0IG4gPSBkYi5wcmVwYXJlKCdTRUxFQ1QgQ09VTlQoKikgQVMgbiBGUk9NIGFjY291bnRzJykuZ2V0KCkubjsKY29uc3QgdiA9IGRiLnByZXBhcmUoJ1NFTEVDVCBNQVgodmVyc2lvbikgQVMgdiBGUk9NIHNjaGVtYV92ZXJzaW9uJykuZ2V0KCkudjsKY29uc29sZS5sb2coJ1JFU1VMVCAnICsgbiArICcgJyArIHYpOwpkYi5jbG9zZSgpOwo=')))
+            $out = & node $check $dbPath
+            Note "check output: $out"
+            if ($LASTEXITCODE -ne 0) { throw "the check could not read the database (exit $LASTEXITCODE)" }
+            $fields = (($out | Select-String 'RESULT').ToString().Trim() -split '\s+')
+            if ([int]$fields[1] -ne 1) { throw "the existing account was lost: found $($fields[1])" }
+            if ([int]$fields[2] -lt 1) { throw "schema version was not recorded: $($fields[2])" }
 
-            Write-Host "PASS: migration completed in place; the existing account survived; schema v$($line[2])"
+            Write-Host "PASS: migration completed in place; the existing account survived; schema v$($fields[2])"
             Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $userData
           } catch {
             Get-Content $log -ErrorAction SilentlyContinue | Write-Host

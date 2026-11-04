@@ -54,6 +54,11 @@ export interface SmokeReport {
    * application can actually work".
    */
   schemaVersion: number | null;
+  /**
+   * Where an unusable database was moved, or null if recovery did not run.
+   * Non-null means the app started by setting a broken file aside.
+   */
+  quarantined: string | null;
   /** Process exit code the caller should use. */
   exitCode: number;
 }
@@ -67,7 +72,8 @@ export interface SmokeReport {
 export async function inspectWindow(
   win: BrowserWindow,
   loadFailures: readonly string[],
-  schemaVersion: number | null = null
+  schemaVersion: number | null = null,
+  quarantined: string | null = null
 ): Promise<SmokeReport> {
   const url = win.webContents.getURL();
 
@@ -108,6 +114,7 @@ export async function inspectWindow(
       node: process.versions['node'] ?? 'unknown',
     },
     schemaVersion,
+    quarantined,
     exitCode: ok ? 0 : 1,
   };
 }

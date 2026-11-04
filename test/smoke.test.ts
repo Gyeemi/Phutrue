@@ -119,3 +119,27 @@ describe('required text', () => {
     expect(REQUIRED_TEXT).toEqual(['Set up your mail', 'Gmail', 'Microsoft']);
   });
 });
+
+describe('recovery is reported, not hidden', () => {
+  it('records where an unusable database was moved', async () => {
+    const win = stubWindow({
+      origin: 'app://phutrue',
+      title: 'Phutrue — ready',
+      text: 'Set up your mail Gmail Microsoft',
+      mounted: true,
+    });
+    const report = await inspectWindow(win, [], 2, 'C:\\Users\\me\\AppData\\Roaming\\Phutrue\\phutrue.db.unusable-2026-11-04');
+    expect(report.quarantined).toContain('unusable');
+  });
+
+  it('leaves it null on a normal start', async () => {
+    const win = stubWindow({
+      origin: 'app://phutrue',
+      title: 'Phutrue — ready',
+      text: 'Set up your mail Gmail Microsoft',
+      mounted: true,
+    });
+    const report = await inspectWindow(win, [], 2, null);
+    expect(report.quarantined).toBeNull();
+  });
+});

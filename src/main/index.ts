@@ -67,10 +67,34 @@ interface Services {
 
 let services: Services | null = null;
 
+/**
+ * Where a database that could not be used was moved, if that happened.
+ *
+ * Kept so the smoke report can say whether recovery ran. Null means the normal
+ * path was taken.
+ */
+let quarantinedTo: string | null = null;
+
 function buildServices(): Services {
   const file = databasePath();
   const db = openDatabase(file, {
     onQuarantine: (movedTo) => {
+      quarantinedTo = movedTo;
+
+      /*
+       * Never block an unattended start.
+       *
+       * This was `showMessageBoxSync`, which waits for a click. An automated run
+       * has nobody to click it, so the process sat on a modal dialog until it was
+       * killed - the recovery worked and the test timed out anyway. Telling the
+       * user matters, but not at the cost of hanging the process that is trying
+       * to tell them.
+       */
+      if (process.env['PHUTRUE_SMOKE'] === '1') {
+        process.stderr.write(`SMOKE: unusable database moved to ${movedTo}\n`);
+        return;
+      }
+
       // Say so. An app that silently discards its database teaches users not to
       // trust it with their mail.
       dialog.showMessageBoxSync({
@@ -355,7 +379,7 @@ if (!gotLock) {
           void (async () => {
             const { inspectWindow, writeReport } = await import('./smoke.js');
             const failures = (win as unknown as { __loadFailures?: string[] }).__loadFailures ?? [];
-            const report = await inspectWindow(win, failures, schemaVersion);
+            const report = await inspectWindow(win, failures, schemaVersion, quarantinedTo);
             const out = process.env['PHUTRUE_SMOKE_OUT'] ?? path.join(app.getPath('userData'), 'smoke.json');
             try {
               writeReport(report, out);

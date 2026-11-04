@@ -12,9 +12,9 @@
  * enforceable and same-origin rules behave predictably.
  */
 
-import { protocol, net } from 'electron';
+import { protocol } from 'electron';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 export const APP_SCHEME = 'app';
 export const APP_HOST = 'phutrue';
@@ -101,6 +101,51 @@ export function resolveRendererPath(root: string, rawPathname: string): Renderer
   return { ok: true, file: resolved };
 }
 
+/**
+ * Content-Type for every file the renderer can request.
+ *
+ * This is **not** cosmetic. `installCsp` stamps `X-Content-Type-Options: nosniff`
+ * on every response, and nosniff makes Chromium refuse a subresource whose type
+ * does not match what it is used as:
+ *
+ *   - a `<script src>` whose Content-Type is not a JavaScript type is blocked
+ *     outright, so `app.js` never executes and `#root` stays empty;
+ *   - a `<link rel=stylesheet>` whose Content-Type is not `text/css` is blocked
+ *     too, so an unstyled document renders.
+ *
+ * Relying on `net.fetch(file://...)`'s sniffing put both of those behind an
+ * implementation detail. Setting the type explicitly makes the outcome
+ * deterministic, which matters most where it cannot be observed here — a
+ * packaged build on Windows.
+ *
+ * The map is an allowlist: a file type not listed is refused rather than served
+ * with a guessed type, so an unexpected asset cannot become a script.
+ */
+const CONTENT_TYPES: Readonly<Record<string, string>> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.txt': 'text/plain; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
+};
+
+/** Content-Type for a resolved path, or null when the extension is not allowed. */
+export function contentTypeFor(file: string): string | null {
+  return CONTENT_TYPES[path.extname(file).toLowerCase()] ?? null;
+}
+
 export function serveRenderer(root: string): void {
   protocol.handle(APP_SCHEME, (request) => {
     let url: URL;
@@ -121,6 +166,37 @@ export function serveRenderer(root: string): void {
       });
     }
 
-    return net.fetch(pathToFileURL(resolved.file).toString());
+    const contentType = contentTypeFor(resolved.file);
+    if (!contentType) {
+      // Not a type we are willing to serve. Refusing is safer than guessing:
+      // with nosniff in force, a wrong guess either breaks the page or, worse,
+      // lets a file be interpreted as something executable.
+      return new Response('Unsupported media type', { status: 415 });
+    }
+
+    // Always return a fresh Response with an explicit Content-Type. The file is
+    // read here rather than proxied through net.fetch so the type can never be
+    // left to inference.
+    let bytes: Buffer;
+    try {
+      bytes = readFileSync(resolved.file);
+    } catch {
+      return new Response('Not found', { status: 404 });
+    }
+
+    // Copy into a plain Uint8Array: a Node Buffer is not a valid BodyInit under
+    // the DOM typings, and this also detaches the response from the Buffer pool.
+    const body = new Uint8Array(bytes);
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Length': String(bytes.byteLength),
+        // The renderer is served from a stable origin and never cached across
+        // builds; a stale script after an update is a blank-screen risk.
+        'Cache-Control': 'no-store',
+      },
+    });
   });
 }

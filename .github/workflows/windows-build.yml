@@ -64,7 +64,16 @@ jobs:
         run: npm run assets:check
 
       - name: Build installer
-        run: npm run dist
+        shell: pwsh
+        run: |
+          # Tee so the reason survives the step, whatever it is: electron-builder
+          # failures are the one thing that cannot be reproduced on Linux.
+          npm run dist 2>&1 | Tee-Object -FilePath dist-build.log
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host '--- last 80 lines of dist-build.log ---'
+            Get-Content dist-build.log -Tail 80 | Write-Host
+            exit $LASTEXITCODE
+          }
         env:
           # electron-builder publishes unless told not to. This workflow must
           # never create a release; the artifact upload below is the delivery
@@ -181,6 +190,11 @@ jobs:
           "node $(node --version)" | Out-File $out -Append -Encoding utf8
           "npm $(npm --version)" | Out-File $out -Append -Encoding utf8
           "platform $([System.Environment]::OSVersion.VersionString)" | Out-File $out -Append -Encoding utf8
+          if (Test-Path dist-build.log) {
+            "" | Out-File $out -Append -Encoding utf8
+            "--- dist-build.log (tail 120) ---" | Out-File $out -Append -Encoding utf8
+            Get-Content dist-build.log -Tail 120 | Out-File $out -Append -Encoding utf8
+          }
 
           git config user.name 'phutrue-ci'
           git config user.email 'ci@users.noreply.github.com'

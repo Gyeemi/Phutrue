@@ -161,6 +161,47 @@ jobs:
           }
           Write-Host 'PASS: the installed application shows the account setup screen'
 
+      # The installer is also committed to the branch.
+      #
+      # This is not redundant with the artifact upload: artifact downloads
+      # redirect to Azure blob storage, which a client inspecting the run may be
+      # unable to reach. Git is the transport that always works, and the binary
+      # is the actual deliverable.
+      - name: Publish the installer to the branch
+        if: success()
+        shell: pwsh
+        run: |
+          $dir = 'installers'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $name = '${{ steps.installer.outputs.name }}'
+          Copy-Item '${{ steps.installer.outputs.path }}' (Join-Path $dir $name)
+
+          $hash = '${{ steps.installer.outputs.sha256 }}'
+          $size = (Get-Item (Join-Path $dir $name)).Length
+          @"
+          # Phutrue Windows installer
+
+          | | |
+          |---|---|
+          | File | ``$name`` |
+          | Version | ${{ github.ref_name }} build |
+          | Size | $size bytes |
+          | SHA-256 | ``$hash`` |
+          | Commit | ``${{ github.sha }}`` |
+          | Built on | windows-latest, x64 |
+          | Verified | packaged app and silently-installed app both rendered the account setup screen |
+
+          This directory is written by CI on a successful Windows build. The
+          installer is unsigned, so Windows SmartScreen will warn on first run —
+          see docs/windows-verification.md for why that is expected.
+          "@ | Out-File (Join-Path $dir 'README.md') -Encoding utf8
+
+          git config user.name 'phutrue-ci'
+          git config user.email 'ci@users.noreply.github.com'
+          git add $dir
+          git commit -m "release: Phutrue Windows installer ($hash) [skip ci]"
+          git push
+
       - name: Upload the installer
         uses: actions/upload-artifact@v4
         with:

@@ -64,7 +64,7 @@ asset verification and the path checks.
 
 ```
 Test Files  9 passed (9)
-     Tests  217 passed (217)
+     Tests  246 passed (246)
 RESULT: 95 passed, 0 failed      # assets
 RESULT: 15 passed, 0 failed      # paths
 ```
@@ -102,6 +102,24 @@ npm start
 **Automatic failure if you see:** a blank white or black window, an unstyled
 page, or no window at all. A blank window is the specific failure mode the CSP
 and `app://` work exists to prevent — see the checks in step 4.
+
+### 3b. If only the logo is visible
+
+That specific symptom — the logo renders but no wordmark, facts or button —
+means React mounted (the logo is a data-URI `<img>` rendered by React) but the
+interface around it did not. Work through these in order:
+
+1. **Open DevTools (`Ctrl+Shift+I`) → Console.** A `Refused to execute script
+   because its MIME type …` or `Refused to apply style …` message means the
+   `app://` handler served a wrong Content-Type, which `nosniff` then rejects.
+   That was a real defect, fixed by serving from an explicit allowlist.
+2. **Network tab → reload.** `app.js` and `app.css` must both be `200` with
+   types `text/javascript` and `text/css`. Anything else confirms point 1.
+3. If both are correct and the page is still unstyled, check that
+   `dist/renderer/app.css` in the install directory is non-trivial in size —
+   an empty stylesheet renders the structure with no layout.
+
+Report the exact console text if any of these applies.
 
 ### 3a. Confirm the window is not blank and the console is clean
 
@@ -301,7 +319,7 @@ where the sandbox ends and your machine begins.
 | Claim | Verified here? | How |
 | --- | --- | --- |
 | TypeScript compiles clean, strict mode | **Yes** | `tsc --noEmit`, 0 errors |
-| 217 automated tests pass | **Yes** | `vitest run` |
+| 246 automated tests pass | **Yes** | `vitest run` (builds first) |
 | Database opens, migrates, queries, FTS works | **Yes**, against `node:sqlite` on Node 22 | `test/database.test.ts`, `test/repos.test.ts` |
 | Migrations are idempotent and version-guarded | **Yes** | `test/database.test.ts` |
 | IPC rejects unknown channels, untrusted senders, malformed payloads | **Yes** | `test/ipc-router.test.ts`, `test/ipc-validation.test.ts` |

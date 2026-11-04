@@ -250,13 +250,14 @@ them yet:
 | `test/repos.test.ts` | 25 | repository behaviour, FTS operator injection, pagination, UIDVALIDITY reset, draft round-trip |
 | `test/ipc-validation.test.ts` | 34 | every channel has a schema and vice versa; bounds; cross-field account rules |
 | `test/ipc-router.test.ts` | 18 | allowlist, sender authorization, validation, error and log hygiene |
-| `test/protocol.test.ts` | 24 | `app://` path containment, including Windows trailing-dot/space/ADS cases |
+| `test/protocol.test.ts` | 43 | `app://` path containment (incl. Windows trailing-dot/space/ADS) and the Content-Type allowlist, driven through the real handler |
+| `test/bundle-smoke.test.ts` | 10 | the **built** `dist/renderer/app.js` mounts the complete boot screen in a real DOM — the blank-screen guard that source-level tests cannot provide |
 | `test/renderer-shell.test.tsx` | 13 | the shell renders in every state; no blank screen; theme applied |
 | `test/diagnostics.test.ts` | 48 | every diagnostics check, every degraded path, and sentinel-injection proof that no secret reaches the report |
 | `test/diagnostics-view.test.tsx` | 11 | the renderer half of diagnostics: bridge present, no undocumented members, clipboard routed through main |
 | `test/csp.test.ts` | 31 | CSP restrictiveness, header/meta agreement, `app://` loading assumptions |
 
-Total: **217 tests in 9 files.**
+Total: **246 tests in 10 files.**
 
 Risks tracked in §7.
 

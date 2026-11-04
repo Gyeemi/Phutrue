@@ -304,6 +304,34 @@ jobs:
             exit 1
           }
 
+      # Windows-only test failures were previously unreadable: the job log and
+      # artifacts both live behind a host that cannot be reached from where the
+      # run is reviewed. This commits the failure to the branch instead, which is
+      # the one channel that works, so the next failure comes with its message.
+      - name: Publish failure log to the branch
+        if: failure()
+        shell: pwsh
+        run: |
+          $log = 'ci-failure.txt'
+          "Windows build failed" | Out-File -FilePath $log -Encoding utf8
+          "commit: ${{ github.sha }}" | Out-File -FilePath $log -Append -Encoding utf8
+
+          # Assertion messages are the point. Run the suite again with the
+          # reporter that includes them, and append even if it fails again.
+          npx vitest run --reporter=verbose *>> $log
+          "exit code: $LASTEXITCODE" | Out-File -FilePath $log -Append -Encoding utf8
+
+          git config user.name 'phutrue-ci'
+          git config user.email 'ci@users.noreply.github.com'
+          git add $log
+          git commit -m "ci: Windows failure log [skip ci]"
+          git push origin "HEAD:${{ github.ref_name }}" 2>&1 | Tee-Object -FilePath push.log
+          if ($LASTEXITCODE -ne 0) {
+            $msg = ((Get-Content push.log -Raw) -replace "`r?`n", ' | ')
+            if ($msg.Length -gt 700) { $msg = $msg.Substring(0, 700) }
+            Write-Host "::error title=failure log push failed::$msg"
+          }
+
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4

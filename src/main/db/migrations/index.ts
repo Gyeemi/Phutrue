@@ -204,4 +204,75 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+
+  {
+    version: 2,
+    name: 'oauth account tokens and pending authorisations',
+    up(db) {
+      /*
+       * OAuth metadata lives separately from `accounts` for two reasons:
+       *
+       *  1. It is optional. A password account has no tokens, and adding five
+       *     nullable columns to `accounts` would make the common case carry the
+       *     uncommon one's shape.
+       *  2. Token LIFETIME and SCOPES are operational state, not identity. They
+       *     change on every refresh, so keeping them apart means account rows
+       *     are not rewritten constantly.
+       *
+       * No token material is stored here — not even encrypted. The ciphertext
+       * lives in `secrets` via safeStorage, and this table only holds a
+       * reference plus non-secret bookkeeping. A database dump therefore
+       * reveals no token, even before DPAPI is considered.
+       */
+      db.exec(`
+        CREATE TABLE oauth_accounts (
+          account_id     INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+          provider       TEXT    NOT NULL CHECK (provider IN ('google','microsoft')),
+          -- When the access token expires, epoch ms. Never a token.
+          expires_at     INTEGER NOT NULL DEFAULT 0,
+          -- Space-separated scopes the provider actually granted, which can be
+          -- narrower than what was requested.
+          scope          TEXT    NOT NULL DEFAULT '',
+          -- Provider-side subject/account id, used to recognise a re-authorised
+          -- account rather than creating a duplicate.
+          subject        TEXT,
+          -- Human-readable state; the message is safe to display.
+          status         TEXT    NOT NULL DEFAULT 'connected'
+                                 CHECK (status IN ('connected','expired','error','revoked')),
+          last_error     TEXT,
+          created_at     INTEGER NOT NULL,
+          updated_at     INTEGER NOT NULL
+        );
+      `);
+      db.exec('CREATE INDEX idx_oauth_accounts_subject ON oauth_accounts(provider, subject)');
+
+      /*
+       * Short-lived authorisation attempts.
+       *
+       * These are stored so a callback can be matched to the request that
+       * started it, including across a main-process restart, and so `state` can
+       * be marked consumed exactly once. The PKCE verifier IS here — it is a
+       * secret, but a single-use one that expires in minutes, and it must
+       * survive the round trip through the browser. It is deleted the moment the
+       * attempt is consumed, and `expires_at` bounds its lifetime.
+       *
+       * `state` is stored as a hash, not the raw value: the raw state travels
+       * through the browser, so a leaked table must not let an attacker forge a
+       * callback.
+       */
+      db.exec(`
+        CREATE TABLE oauth_pending (
+          state_hash     TEXT PRIMARY KEY,
+          provider       TEXT    NOT NULL CHECK (provider IN ('google','microsoft')),
+          code_verifier  TEXT    NOT NULL,
+          redirect_uri   TEXT    NOT NULL,
+          -- Set once the callback has been consumed, so a replay is detectable.
+          consumed_at    INTEGER,
+          created_at     INTEGER NOT NULL,
+          expires_at     INTEGER NOT NULL
+        );
+      `);
+      db.exec('CREATE INDEX idx_oauth_pending_expiry ON oauth_pending(expires_at)');
+    },
+  },
 ];

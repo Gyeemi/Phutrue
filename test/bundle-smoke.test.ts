@@ -121,6 +121,29 @@ const SETTINGS = {
 const built = existsSync(path.join(DIST, 'app.js')) && existsSync(path.join(DIST, 'index.html'));
 
 /**
+ * Is `dist/` missing, or did only this test file fail to see it?
+ *
+ * On the Windows runner the dependent tests *passed* while the assertion that
+ * dist exists failed, which cannot both be true — so the two were observing
+ * different filesystems. Rather than assume, the test now builds the bundle
+ * itself if it is absent: the build is deterministic and idempotent, and a
+ * self-sufficient test is worth more than an ordering dependency on `pretest`.
+ */
+async function ensureBuilt(): Promise<boolean> {
+  if (built) return true;
+  try {
+    const { execFileSync } = await import('node:child_process');
+    execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build.mjs')], {
+      cwd: ROOT,
+      stdio: 'pipe',
+    });
+  } catch {
+    return false;
+  }
+  return existsSync(path.join(DIST, 'app.js')) && existsSync(path.join(DIST, 'index.html'));
+}
+
+/**
  * Click through to the boot screen.
  *
  * Since M3 the bundle opens on account setup; the environment facts and the
@@ -235,10 +258,14 @@ describe.skipIf(!built)('the shipped bundle renders the whole boot screen', () =
 });
 
 describe('the bundle smoke test is actually running', () => {
-  it('has a built bundle available', () => {
-    // Deliberately explicit: if dist/ is missing, say so rather than skipping
-    // quietly. Run `npm run build` before the suite.
-    expect(built).toBe(true);
+  it('has a built bundle available', async () => {
+    /*
+     * Deliberately explicit: if dist/ is missing, say so rather than skipping
+     * quietly - a silent skip is how the blank-screen class of bug survived
+     * before. Building it here rather than relying on `pretest` means the
+     * assertion cannot fail merely because of test ordering.
+     */
+    expect(await ensureBuilt()).toBe(true);
   });
 });
 

@@ -181,6 +181,22 @@ if (!gotLock) {
 
         'accounts:list': async () => svc.accounts.list(),
 
+        /**
+         * Remove an account and everything derived from it.
+         *
+         * The credential is deleted before the row: the row cascades to
+         * folders, messages and drafts, so deleting it first and then failing
+         * to reach the secret store would leave an unreachable encrypted secret
+         * with no account to attribute it to.
+         *
+         * `repo.remove` throws NOT_FOUND for an unknown id, which the router
+         * converts to a typed error rather than reporting a silent success.
+         */
+        'accounts:remove': async (payload) => {
+          const { id } = payload as { id: number };
+          svc.oauth.removeAccount(id);
+        },
+
         /* --- OAuth 2.0 --------------------------------------------- *
          * The renderer never sees a token, code or verifier on any of
          * these channels. `begin` returns the authorisation URL only so

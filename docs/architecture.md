@@ -252,11 +252,12 @@ them yet:
   Its contract is exercised only through the pieces that can run without the
   Electron binary; `safeStorage` itself cannot be tested here (see §7).
 - `src/main/ipc/schemas.ts` — a schema for every one of the **31** declared
-  channels. Handlers are wired for **11** (`app:info`, `app:diagnostics`,
+  channels. Handlers are wired for **12** (`app:info`, `app:diagnostics`,
   `app:copyToClipboard`, `settings:get`, `settings:update`, `accounts:list`,
-  `oauth:begin`, `oauth:open`, `oauth:complete`, `oauth:cancel`, `oauth:state`);
-  the other 20 return a deliberate "This feature is not available in this
-  build" `INTERNAL` result from the router, which a test pins.
+  `accounts:remove`, `oauth:begin`, `oauth:open`, `oauth:complete`,
+  `oauth:cancel`, `oauth:state`); the other 19 return a deliberate "This feature
+  is not available in this build" `INTERNAL` result from the router, which a test
+  pins.
 
 ### Test inventory at this checkpoint
 

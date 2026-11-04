@@ -376,3 +376,72 @@ describe('architecture documentation matches the code', () => {
     expect(text).toMatch(/build\.integrity|build stamp/i);
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * Renderer ↔ main wiring
+ *
+ * The account-screen tests stub the bridge, so they pass whether or not the
+ * main process implements the channel they call. That is exactly how
+ * `accounts:remove` shipped unwired: the UI called it, the stub answered, and
+ * the real app would have failed. This test reads both sides from source and
+ * compares them, so a channel the renderer uses but main does not handle cannot
+ * pass unnoticed again.
+ * ------------------------------------------------------------------ */
+
+describe('every channel the renderer invokes is wired in main', () => {
+  async function sources(): Promise<{ invoked: string[]; wired: Set<string>; declared: string[] }> {
+    const { readFileSync, readdirSync } = await import('node:fs');
+    const path = await import('node:path');
+    const root = path.resolve(__dirname, '..');
+    const { CHANNELS } = await import('../src/shared/ipc.js');
+
+    // Collect renderer sources.
+    const rendererDir = path.join(root, 'src', 'renderer');
+    const files: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.(ts|tsx)$/.test(entry.name)) files.push(full);
+      }
+    };
+    walk(rendererDir);
+
+    const invoked = new Set<string>();
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      // `callResult<...>('channel'` and `invoke('channel'`
+      for (const m of text.matchAll(/(?:callResult|call|invoke)(?:<[^>]*>)?\(\s*'([a-z]+:[A-Za-z]+)'/g)) {
+        if (m[1]) invoked.add(m[1]);
+      }
+    }
+
+    const main = readFileSync(path.join(root, 'src', 'main', 'index.ts'), 'utf8');
+    const start = main.indexOf('registerRouter(');
+    const end = main.indexOf('// A sender is trusted only if it is one of our own windows.');
+    const block = main.slice(start, end);
+    const wired = new Set([...block.matchAll(/'([a-z]+:[A-Za-z]+)':/g)].map((m) => m[1] as string));
+
+    return { invoked: [...invoked].sort(), wired, declared: [...CHANNELS] };
+  }
+
+  it('finds the channels the renderer calls', async () => {
+    const { invoked } = await sources();
+    // Sanity check on the parser itself: if this drops to zero the following
+    // assertions would pass vacuously.
+    expect(invoked.length).toBeGreaterThanOrEqual(8);
+    expect(invoked).toContain('oauth:begin');
+  });
+
+  it('has a handler for every channel the renderer invokes', async () => {
+    const { invoked, wired } = await sources();
+    const missing = invoked.filter((c) => !wired.has(c));
+    expect(missing, `renderer calls unwired channel(s): ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('only invokes channels that are declared in the contract', async () => {
+    const { invoked, declared } = await sources();
+    const undeclared = invoked.filter((c) => !declared.includes(c));
+    expect(undeclared).toEqual([]);
+  });
+});

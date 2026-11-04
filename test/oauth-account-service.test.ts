@@ -840,3 +840,46 @@ describe('stateFor', () => {
     expect(() => h.service.stateFor(account.id)).toThrow(/not connected with OAuth/i);
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * Removal through the service
+ *
+ * `removeAccount` is what the `accounts:remove` handler calls. It is tested
+ * directly because the account-screen tests stub the bridge: they prove the UI
+ * invokes the channel, not that the main process does the right thing.
+ * ------------------------------------------------------------------ */
+
+describe('removeAccount — non-OAuth accounts', () => {
+  it('removes a password account and deletes its credential key', async () => {
+    const h = harness();
+    const account = createAccountRepo(h.db).create({
+      label: 'imap',
+      email: 'imap@example.com',
+      displayName: '',
+      password: 'secret',
+      authKind: 'password',
+      oauthProvider: null,
+      imapHost: 'imap.example.com',
+      imapPort: 993,
+      imapSecure: true,
+      smtpHost: 'smtp.example.com',
+      smtpPort: 465,
+      smtpSecure: true,
+    });
+
+    // Simulate what the create path stores for a password account.
+    h.secrets.put(`account:${account.id}:secret`, 'encrypted-blob');
+
+    h.service.removeAccount(account.id);
+
+    expect(h.secrets.has(`account:${account.id}:secret`)).toBe(false);
+    expect(createAccountRepo(h.db).list()).toHaveLength(0);
+  });
+
+  it('throws NOT_FOUND for an id that does not exist', async () => {
+    const h = harness();
+    // The repo throws rather than silently succeeding, so a UI bug cannot look
+    // like a successful removal.
+    expect(() => h.service.removeAccount(9999)).toThrow();
+  });
+});

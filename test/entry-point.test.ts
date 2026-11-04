@@ -286,3 +286,45 @@ describe('renderer readiness signal', () => {
     expect(titleIndex).toBeGreaterThan(renderIndex);
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * Stating which renderer is served
+ *
+ * A stale renderer caused a long false trail: the window showed a frame the
+ * current source provably cannot produce, but nothing at runtime said which
+ * files were on disk. These assertions keep that answer available.
+ * ------------------------------------------------------------------ */
+
+describe('startup reports the served renderer', () => {
+  it('logs the renderer directory and the size of every file it needs', () => {
+    const index = read('src/main/index.ts');
+    expect(index).toContain('logRendererFacts');
+    expect(index).toContain('statSync');
+    // The three files whose absence or staleness produces a wrong window.
+    expect(index).toContain("['index.html', 'app.js', 'app.css']");
+  });
+
+  it('reports a missing file explicitly instead of skipping it', () => {
+    const index = read('src/main/index.ts');
+    expect(index).toContain('MISSING');
+  });
+
+  it('logs sizes only, never file contents', () => {
+    const index = read('src/main/index.ts');
+    const fn = index.slice(index.indexOf('function logRendererFacts'));
+    const body = fn.slice(0, fn.indexOf('\n}\n') + 2);
+
+    expect(body).toContain('statSync');
+    // Reading contents would be pointless here and risks echoing a bundle into a
+    // log a user might paste publicly.
+    expect(body).not.toContain('readFileSync');
+    expect(body).not.toContain('readFile');
+  });
+
+  it('prints the build stamp alongside the sizes', () => {
+    const index = read('src/main/index.ts');
+    const fn = index.slice(index.indexOf('function logRendererFacts'));
+    const body = fn.slice(0, fn.indexOf('\n}\n') + 2);
+    expect(body).toContain('__BUILD_STAMP__');
+  });
+});

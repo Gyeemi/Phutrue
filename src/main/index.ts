@@ -14,6 +14,7 @@
 
 import { app, BrowserWindow, clipboard, dialog, Menu, session, shell } from 'electron';
 import path from 'node:path';
+import { statSync } from 'node:fs';
 
 import type { AppInfo } from '../shared/models.js';
 import { AppError } from '../shared/result.js';
@@ -92,6 +93,32 @@ function buildServices(): Services {
   };
 }
 
+/**
+ * Print the renderer files this process is about to serve.
+ *
+ * Sizes only. A build of the account-setup UI produces an `app.js` around 250 KB;
+ * a branding-era build is far smaller. If a user reports a logo-only window,
+ * this line and `dist/build-stamp.json` together answer "is the installed
+ * renderer the one that was just built?" without needing to reproduce anything.
+ */
+function logRendererFacts(rendererDir: string): void {
+  const files = ['index.html', 'app.js', 'app.css'];
+  const parts: string[] = [];
+
+  for (const name of files) {
+    try {
+      const bytes = statSync(path.join(rendererDir, name)).size;
+      parts.push(`${name} ${bytes} B`);
+    } catch {
+      parts.push(`${name} MISSING`);
+    }
+  }
+
+  const stamp = typeof __BUILD_STAMP__ === 'string' ? __BUILD_STAMP__ : 'dev';
+  console.log(`[startup] renderer at ${rendererDir}`);
+  console.log(`[startup] serving ${parts.join(', ')} (build ${stamp})`);
+}
+
 function appInfo(s: Services): AppInfo {
   return {
     version: app.getVersion(),
@@ -162,6 +189,21 @@ if (!gotLock) {
      * menu at all.
      */
     Menu.setApplicationMenu(null);
+
+    /*
+     * State which renderer is about to be served, in bytes.
+     *
+     * This is the single most useful line in a support report, and it exists
+     * because a stale renderer caused a long false trail. The window showed a
+     * logo and nothing else; the source could be shown not to produce that
+     * frame, but nothing at runtime said which files were actually on disk. A
+     * stale `app.js` is indistinguishable from a broken one by looking at it —
+     * but the byte counts differ obviously between builds.
+     *
+     * `logRendererFacts` prints sizes, never contents, and never a path outside
+     * the install directory.
+     */
+    logRendererFacts(RENDERER_DIR);
 
     // Serve the renderer and lock down the session.
     serveRenderer(RENDERER_DIR);

@@ -138,3 +138,29 @@ describe('recovery is reported, not hidden', () => {
     expect(report.quarantined).toBeNull();
   });
 });
+
+describe('healthy is not the same as showing the setup screen', () => {
+  it('is healthy on the Accounts screen, without the setup phrases', async () => {
+    // Once an account exists the app shows "Accounts", not "Set up your mail".
+    // A check that demanded the setup text would call a working app broken -
+    // which is exactly what the half-migrated test did when it was first run.
+    const win = stubWindow({ text: 'Accounts Existing existing@example.com Add account' });
+    const report = await inspectWindow(win, [], 2, null);
+
+    expect(report.healthy).toBe(true);
+    expect(report.ok).toBe(false);
+    expect(report.missing.length).toBeGreaterThan(0);
+  });
+
+  it('is not healthy when the renderer never mounted', async () => {
+    const win = stubWindow({ title: 'Phutrue', text: 'Set up your mail Gmail Microsoft' });
+    const report = await inspectWindow(win, [], 2, null);
+    expect(report.healthy).toBe(false);
+  });
+
+  it('is not healthy when a main-frame load failed', async () => {
+    const win = stubWindow();
+    const report = await inspectWindow(win, ['ERR_FAILED app://phutrue/index.html'], 2, null);
+    expect(report.healthy).toBe(false);
+  });
+});

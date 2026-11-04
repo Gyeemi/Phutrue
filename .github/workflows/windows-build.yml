@@ -197,8 +197,19 @@ jobs:
             if (-not (Test-Path $report)) { throw 'no smoke report was written' }
             $json = Get-Content $report -Raw | ConvertFrom-Json
             Note ($json | ConvertTo-Json -Depth 5)
-            if (-not $json.ok) { throw "smoke failed: missing=$($json.missing -join ', ')" }
+            # An account exists, so the renderer will show the Accounts screen
+            # rather than the setup screen. Assert that the app is genuinely
+            # running, not that it shows one particular page.
+            if (-not $json.healthy) {
+              throw "the renderer is not running: url=$($json.url) mounted=$($json.rendererMounted) loadFailures=$($json.loadFailures -join ', ')"
+            }
             if ($json.schemaVersion -lt 1) { throw "schema version was $($json.schemaVersion)" }
+            $sawAccounts = $json.text -match 'Accounts'
+            $sawSetup = $json.text -match 'Set up your mail'
+            Note "shows Accounts screen: $sawAccounts | shows setup screen: $sawSetup"
+            if (-not ($sawAccounts -or $sawSetup)) {
+              throw "neither the Accounts nor the setup screen was rendered"
+            }
 
             $aside = Get-ChildItem -Path $userData -Filter 'phutrue.db.unusable-*' -ErrorAction SilentlyContinue
             if ($aside) { throw "database was replaced instead of completed: $($aside.Name)" }

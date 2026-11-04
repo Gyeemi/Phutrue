@@ -344,9 +344,9 @@ them yet:
 | `test/account-screen.test.tsx` | 41 | provider selection, progress, waiting, cancel, success, failures, removal |
 | `test/entry-point.test.ts` | 28 | the packaged entry point, the retired branding page must throw, exactly one `app://` load, no `data:` navigation, startup diagnostics, readiness literals |
 
-| `test/smoke.test.ts` | 12 | the packaged-app self test's decision logic: wrong origin, unmounted renderer, missing screen text, load failures |
+| `test/smoke.test.ts` | 15 | the packaged-app self test's decision logic: wrong origin, unmounted renderer, missing screen text, load failures |
 
-Total: **559 tests in 19 files.**
+Total: **562 tests in 19 files.**
 
 ### 5.1 The OAuth flow, and why it is shaped this way
 

@@ -59,6 +59,12 @@ export interface SmokeReport {
    * Non-null means the app started by setting a broken file aside.
    */
   quarantined: string | null;
+  /**
+   * Whether the renderer is genuinely running: app:// origin, React committed,
+   * no load failures. Unlike `ok`, this does not depend on which screen is
+   * being shown.
+   */
+  healthy: boolean;
   /** Process exit code the caller should use. */
   exitCode: number;
 }
@@ -98,7 +104,8 @@ export async function inspectWindow(
    */
   const fromAppOrigin = url.startsWith('app://phutrue');
 
-  const ok = fromAppOrigin && rendererMounted && missing.length === 0 && loadFailures.length === 0;
+  const healthy = fromAppOrigin && rendererMounted && loadFailures.length === 0;
+  const ok = healthy && missing.length === 0;
 
   return {
     ok,
@@ -115,6 +122,7 @@ export async function inspectWindow(
     },
     schemaVersion,
     quarantined,
+    healthy,
     exitCode: ok ? 0 : 1,
   };
 }

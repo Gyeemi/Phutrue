@@ -161,6 +161,14 @@ jobs:
           }
           Write-Host 'PASS: the installed application shows the account setup screen'
 
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: phutrue-windows-installer
+          path: ${{ steps.installer.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+
       # The installer is also committed to the branch.
       #
       # This is not redundant with the artifact upload: artifact downloads
@@ -200,15 +208,9 @@ jobs:
           git config user.email 'ci@users.noreply.github.com'
           git add $dir
           git commit -m "release: Phutrue Windows installer ($hash) [skip ci]"
-          git push
-
-      - name: Upload the installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: phutrue-windows-installer
-          path: ${{ steps.installer.outputs.path }}
-          if-no-files-found: error
-          retention-days: 14
+          # actions/checkout leaves a detached HEAD, so name the destination
+          # explicitly; a bare `git push` has no upstream and fails.
+          git push origin "HEAD:${{ github.ref_name }}"
 
       # Kept even on failure: a failed run is exactly when these matter.
       # On failure, publish the log to the branch itself.
@@ -242,7 +244,7 @@ jobs:
           git config user.email 'ci@users.noreply.github.com'
           git add ci-failure.txt
           git commit -m 'ci: Windows failure log [skip ci]'
-          git push
+          git push origin "HEAD:${{ github.ref_name }}"
 
       - name: Upload diagnostics
         if: always()

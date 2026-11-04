@@ -199,6 +199,8 @@ export function createMainWindow(opts: CreateWindowOptions): BrowserWindow {
    * the load succeed" is not enough — you have to record *what* loaded.
    */
   let mainFrameFailed = false;
+  /** Collected for the packaged-app self test (`PHUTRUE_SMOKE=1`). */
+  const loadFailures: string[] = [];
 
   win.webContents.on('did-finish-load', () => {
     const url = win.webContents.getURL();
@@ -248,6 +250,7 @@ export function createMainWindow(opts: CreateWindowOptions): BrowserWindow {
       return;
     }
     mainFrameFailed = true;
+    loadFailures.push(`${validatedURL} (${errorCode} ${errorDescription})`);
     startLog(`FAILED to load ${describeUrl(validatedURL)}: ${errorCode} ${errorDescription}`);
   });
 
@@ -273,6 +276,10 @@ export function createMainWindow(opts: CreateWindowOptions): BrowserWindow {
       );
     }
   });
+
+  // Attached to the window so a caller (the smoke test) can inspect what
+  // happened while loading, without a module-level side channel.
+  (win as unknown as { __loadFailures?: string[] }).__loadFailures = loadFailures;
 
   startLog(`loading ${APP_ORIGIN}/index.html`);
   win.loadURL(`${APP_ORIGIN}/index.html`);

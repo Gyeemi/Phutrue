@@ -1,0 +1,182 @@
+# Build and verify the Windows installer on a real Windows runner.
+#
+# Why this exists: the OS-specific half of this project cannot be tested in the
+# Linux sandbox it is developed in. No Electron binary can be downloaded there
+# (the release-assets host is blocked), there is no display, and `safeStorage`
+# on Linux is not DPAPI. Every statement about "the app runs on Windows" was
+# therefore an inference rather than an observation.
+#
+# This workflow replaces the inference with an observation:
+#   1. runs the full suite on windows-latest;
+#   2. builds the NSIS installer;
+#   3. launches the *packaged* application, headless-capable via PHUTRUE_SMOKE,
+#      and asserts the account setup screen is really rendered;
+#   4. publishes the .exe as a downloadable artifact.
+#
+# The self test is the important step. Steps 2 and 3 can both succeed while the
+# window shows the wrong thing — that is precisely the bug this workflow was
+# written in response to.
+
+name: Windows
+
+on:
+  push:
+    branches:
+      - arena/a2f9f412-phutrue
+  workflow_dispatch:
+
+# Read-only: this never pushes, publishes or comments.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and verify installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        # `npm ci` respects the lockfile exactly; `--no-audit` avoids a network
+        # round trip that has no bearing on the build.
+        run: npm ci --no-audit --no-fund
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Asset checks
+        run: npm run assets:check
+
+      - name: Build installer
+        run: npm run dist
+        env:
+          # electron-builder publishes unless told not to. This workflow must
+          # never create a release; the artifact upload below is the delivery
+          # mechanism, and it is scoped to this run.
+          GH_TOKEN: ''
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Locate the installer
+        id: installer
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path release -Filter '*.exe' -File |
+                 Where-Object { $_.Name -notmatch 'uninstall' } |
+                 Sort-Object Length -Descending | Select-Object -First 1
+          if (-not $exe) { throw 'No installer .exe was produced in release/' }
+          Write-Host "Installer: $($exe.Name) ($($exe.Length) bytes)"
+          "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
+          "name=$($exe.Name)" >> $env:GITHUB_OUTPUT
+          $hash = (Get-FileHash -Algorithm SHA256 -Path $exe.FullName).Hash
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+          Write-Host "SHA256: $hash"
+
+      # Verifying the *unpacked* build proves the packaged files are correct
+      # before the NSIS wrapper is involved, which isolates packaging faults from
+      # installer faults.
+      - name: Verify the packaged app really shows the setup screen
+        shell: pwsh
+        run: |
+          $app = Join-Path $PWD 'release\win-unpacked\Phutrue.exe'
+          if (-not (Test-Path $app)) { throw "Packaged executable not found at $app" }
+
+          $report = Join-Path $PWD 'smoke-report.json'
+          $env:PHUTRUE_SMOKE = '1'
+          $env:PHUTRUE_SMOKE_OUT = $report
+
+          Write-Host 'Launching packaged app with PHUTRUE_SMOKE=1...'
+          $proc = Start-Process -FilePath $app -PassThru -NoNewWindow
+          # The app exits itself once the report is written. Give it a bound.
+          if (-not $proc.WaitForExit(90000)) {
+            Write-Host 'App did not exit; stopping it.'
+            $proc.Kill()
+            throw 'Smoke test timed out after 90s'
+          }
+          Write-Host "App exited with code $($proc.ExitCode)"
+
+          if (-not (Test-Path $report)) { throw 'No smoke report was written' }
+          Get-Content $report | Write-Host
+
+          $json = Get-Content $report -Raw | ConvertFrom-Json
+          if (-not $json.ok) {
+            throw "Smoke test FAILED: url=$($json.url) mounted=$($json.rendererMounted) missing=$($json.missing -join ', ')"
+          }
+          Write-Host "PASS: window rendered $($json.url) with the account setup screen"
+
+      # The installer itself must be launchable and its payload must be intact.
+      # A full silent install is worth doing here: it is the only way to know the
+      # .exe a user will download is not corrupt, and it runs in seconds.
+      - name: Install silently and verify the installed app
+        shell: pwsh
+        run: |
+          $installer = '${{ steps.installer.outputs.path }}'
+          Write-Host 'Running the NSIS installer silently...'
+          $p = Start-Process -FilePath $installer -ArgumentList '/S' -PassThru -Wait
+          Write-Host "Installer exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw "Installer failed with code $($p.ExitCode)" }
+
+          $installed = Get-ChildItem -Path "$env:LOCALAPPDATA\Programs" -Filter 'Phutrue.exe' -Recurse -ErrorAction SilentlyContinue |
+                       Select-Object -First 1
+          if (-not $installed) { throw 'Installed Phutrue.exe not found after silent install' }
+          Write-Host "Installed at: $($installed.FullName)"
+
+          $report = Join-Path $PWD 'installed-smoke-report.json'
+          $env:PHUTRUE_SMOKE = '1'
+          $env:PHUTRUE_SMOKE_OUT = $report
+
+          $proc = Start-Process -FilePath $installed.FullName -PassThru -NoNewWindow
+          if (-not $proc.WaitForExit(90000)) { $proc.Kill(); throw 'Installed app smoke test timed out' }
+          if (-not (Test-Path $report)) { throw 'No smoke report from the installed app' }
+
+          Get-Content $report | Write-Host
+          $json = Get-Content $report -Raw | ConvertFrom-Json
+          if (-not $json.ok) {
+            throw "INSTALLED app smoke FAILED: url=$($json.url) mounted=$($json.rendererMounted) missing=$($json.missing -join ', ')"
+          }
+          Write-Host 'PASS: the installed application shows the account setup screen'
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: phutrue-windows-installer
+          path: ${{ steps.installer.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      # Kept even on failure: a failed run is exactly when these matter.
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phutrue-smoke-reports
+          path: |
+            smoke-report.json
+            installed-smoke-report.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Summary
+        if: always()
+        shell: pwsh
+        run: |
+          @"
+          ## Windows build
+
+          | | |
+          |---|---|
+          | Installer | ${{ steps.installer.outputs.name || 'not produced' }} |
+          | SHA-256 | ``${{ steps.installer.outputs.sha256 || 'n/a' }}`` |
+          | Commit | ``${{ github.sha }}`` |
+          "@ >> $env:GITHUB_STEP_SUMMARY

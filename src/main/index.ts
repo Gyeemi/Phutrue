@@ -291,6 +291,41 @@ if (!gotLock) {
 
     // Step 5 — window.
     mainWindow = createMainWindow({ trusted: trustedWindowIds });
+
+    /*
+     * Packaged-app self test.
+     *
+     * Opt-in via PHUTRUE_SMOKE. It waits for the first paint, inspects the live
+     * renderer, writes a JSON report and quits with a non-zero code on failure.
+     * This is how "does the installed application really show the account setup
+     * screen?" gets an answer from a machine that can run Electron, instead of
+     * an assumption from a machine that cannot.
+     */
+    if (process.env['PHUTRUE_SMOKE'] === '1') {
+      const win = mainWindow;
+      win.once('ready-to-show', () => {
+        // Let React commit and the readiness title land before inspecting.
+        setTimeout(() => {
+          void (async () => {
+            const { inspectWindow, writeReport } = await import('./smoke.js');
+            const failures = (win as unknown as { __loadFailures?: string[] }).__loadFailures ?? [];
+            const report = await inspectWindow(win, failures);
+            const out = process.env['PHUTRUE_SMOKE_OUT'] ?? path.join(app.getPath('userData'), 'smoke.json');
+            try {
+              writeReport(report, out);
+              console.log(`[smoke] report written to ${out}`);
+            } catch (err) {
+              console.log(`[smoke] could not write report: ${err instanceof Error ? err.name : 'unknown'}`);
+            }
+            console.log(`[smoke] ${report.ok ? 'PASS' : 'FAIL'} url=${report.url}`);
+            console.log(`[smoke] title=${JSON.stringify(report.title)} mounted=${report.rendererMounted}`);
+            if (report.missing.length > 0) console.log(`[smoke] missing text: ${report.missing.join(', ')}`);
+            if (report.loadFailures.length > 0) console.log(`[smoke] load failures: ${report.loadFailures.join('; ')}`);
+            app.exit(report.exitCode);
+          })();
+        }, 1200);
+      });
+    }
     mainWindow.on('closed', () => { mainWindow = null; });
 
     app.on('activate', () => {

@@ -25,7 +25,8 @@
     "check:paths": "node scripts/check-paths.mjs",
     "assets:check": "npm run assets && npm run assets:verify && npm run check:paths",
     "start": "npm run build && electron .",
-    "dist": "npm run assets:check && npm run build && electron-builder --win --x64"
+    "dist": "npm run assets:check && npm run build && electron-builder --win --x64",
+    "pretest": "node scripts/build.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

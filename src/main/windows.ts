@@ -10,6 +10,51 @@ import path from 'node:path';
 
 import { APP_ORIGIN } from './protocol.js';
 
+/**
+ * The title the renderer sets once React has mounted.
+ *
+ * Duplicated from `src/renderer/main.tsx` rather than imported: the renderer
+ * bundle must never depend on main-process code, and importing across that
+ * boundary in the other direction would be no better. A test asserts the two
+ * literals stay equal.
+ */
+export const READY_TITLE = 'Phutrue — ready';
+
+/**
+ * Whether startup tracing is on.
+ *
+ * Always on for the facts that describe *what loaded*, because those are cheap
+ * and are the first thing anyone asks when a window looks wrong. The verbose
+ * per-event traces are gated behind PHUTRUE_DEBUG=1.
+ *
+ * Nothing here may log a credential, a token, a message body or a user name.
+ * The only values printed are URLs from our own origin and status codes.
+ */
+const DEBUG = process.env['PHUTRUE_DEBUG'] === '1';
+
+function startLog(message: string): void {
+  console.log(`[startup] ${message}`);
+}
+
+function debugLog(message: string): void {
+  if (DEBUG) console.log(`[startup] ${message}`);
+}
+
+/**
+ * Reduce a URL to something safe to print.
+ *
+ * A `data:` URL carries an entire document; printing it would flood the console
+ * and could echo page content. Its scheme and length are the facts that matter,
+ * and they are exactly what identifies the wrong-document failure.
+ */
+export function describeUrl(raw: string): string {
+  if (raw.startsWith('data:')) {
+    const mediaType = raw.slice(5).split(/[;,]/, 1)[0] ?? '';
+    return `data:${mediaType} (${raw.length} bytes)`;
+  }
+  return raw;
+}
+
 /** Windows taskbar grouping and toast attribution are keyed on this. */
 export const APP_USER_MODEL_ID = 'BarailyInovex.Phutrue';
 
@@ -145,6 +190,91 @@ export function createMainWindow(opts: CreateWindowOptions): BrowserWindow {
   // Deny device access as well.
   win.webContents.session.setPermissionCheckHandler(() => false);
 
+  /*
+   * Startup tracing.
+   *
+   * These listeners exist because a real bug hid behind their absence: the app
+   * once showed a page that had loaded *successfully*, so nothing errored and
+   * nothing was logged. It was simply the wrong page. The lesson is that "did
+   * the load succeed" is not enough — you have to record *what* loaded.
+   */
+  let mainFrameFailed = false;
+
+  win.webContents.on('did-finish-load', () => {
+    const url = win.webContents.getURL();
+    startLog(`renderer loaded: ${describeUrl(url)}`);
+
+    // The check that would have caught the whole false trail immediately.
+    if (!url.startsWith(APP_ORIGIN)) {
+      startLog(
+        `WARNING: the loaded document is not from ${APP_ORIGIN}. The window is ` +
+          `showing something other than the application renderer.`
+      );
+    }
+
+    /*
+     * Ask the renderer to confirm it mounted.
+     *
+     * The preload exposes no channel for this, and adding one would widen the
+     * IPC surface for a diagnostic. The document title works instead: index.html
+     * ships "Phutrue", and main.tsx changes it to "Phutrue — ready" only after
+     * React commits. So a title still equal to "Phutrue" means the bundle never
+     * executed — which is a completely different fault from a screen failing to
+     * render, and the two were previously indistinguishable.
+     */
+    void win.webContents
+      .executeJavaScript('document.title', true)
+      .then((title: unknown) => {
+        const value = String(title);
+        if (value === READY_TITLE) {
+          startLog('renderer mounted (React committed its first render)');
+        } else {
+          startLog(
+            `renderer did NOT report readiness (document.title is "${value}"). ` +
+              'The bundle either did not execute or threw before mounting.'
+          );
+        }
+      })
+      .catch(() => {
+        startLog('could not read document.title from the renderer');
+      });
+  });
+
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    // A subresource failing is not the same as the document failing, and only
+    // the latter leaves an empty window.
+    if (!isMainFrame) {
+      debugLog(`subresource failed (${errorCode} ${errorDescription}): ${describeUrl(validatedURL)}`);
+      return;
+    }
+    mainFrameFailed = true;
+    startLog(`FAILED to load ${describeUrl(validatedURL)}: ${errorCode} ${errorDescription}`);
+  });
+
+  win.webContents.on('did-fail-provisional-load', (_event, errorCode, errorDescription, validatedURL) => {
+    startLog(`provisional load failed: ${describeUrl(validatedURL)} (${errorCode} ${errorDescription})`);
+  });
+
+  win.webContents.on('render-process-gone', (_event, details) => {
+    startLog(`renderer process gone: ${details.reason}`);
+  });
+
+  win.webContents.on('preload-error', (_event, preloadPath, error) => {
+    // Without this, a broken preload produces a window that renders but cannot
+    // talk to main, and the console is silent.
+    startLog(`preload failed (${path.basename(preloadPath)}): ${error.name}`);
+  });
+
+  win.once('ready-to-show', () => {
+    if (mainFrameFailed) {
+      startLog(
+        'the window is being shown after a main-frame load failure; it will be blank. ' +
+          'See the [startup] FAILED line above.'
+      );
+    }
+  });
+
+  startLog(`loading ${APP_ORIGIN}/index.html`);
   win.loadURL(`${APP_ORIGIN}/index.html`);
   return win;
 }

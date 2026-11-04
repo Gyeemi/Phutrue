@@ -208,7 +208,42 @@ proven before those protocols are layered on.
 
 The tester-facing checklist is **[docs/windows-verification.md](windows-verification.md)**.
 
-### 4.8 Build stamping
+### 4.8 Which entry point runs, and why it matters
+
+A Windows build once displayed a centred logo and nothing else, with a completely
+blank DevTools console. The cause was not a rendering fault at all: Electron had
+started the retired branding page (`src/legacy/branding-main.js`) rather than the
+application bundle. That page was a `data:text/html` document with the logo
+inlined as `data:image/png`, so:
+
+- it loaded **successfully**, which is why nothing errored;
+- its only Network entries were `data:` URLs, so no `index.html`, `app.js` or
+  `app.css` request ever appeared;
+- it never touched the application menu, so Electron's default
+  File/Edit/View/Window bar remained;
+- it registered no `did-fail-load` handler, so the console stayed silent.
+
+Every symptom pointed at the renderer; none of them were caused by it. The lesson
+recorded here is that **"the page loaded" is not the same claim as "the right
+page loaded"**, and only the second is worth checking.
+
+Three changes follow from it:
+
+1. `src/legacy/branding-main.js` now throws on load, so mis-targeting the entry
+   point fails immediately and names the correct path.
+2. `createMainWindow` logs the final loaded URL and warns when it is not the app
+   origin; it also handles `did-fail-load` for the main frame, `preload-error`
+   and `render-process-gone`.
+3. The renderer sets `document.title` to a readiness marker after React commits,
+   which main reads back. A title still at the static value means the bundle
+   never executed — a different fault from a screen failing to render, and
+   previously indistinguishable.
+
+`test/entry-point.test.ts` asserts the packaged entry point, that exactly one
+`loadURL` exists and loads `app://`, that no `data:` document can be navigated
+to, and that the two readiness literals stay equal.
+
+### 4.9 Build stamping
 
 `scripts/build.mjs` hashes the emitted renderer files (`index.html`, `app.js`,
 `app.css`) into a 12-character stamp and rebuilds the main bundle with that value
@@ -280,8 +315,9 @@ them yet:
 | `test/oauth-ipc.test.ts` | 22 | the five OAuth channels reject smuggled secrets, malformed handles and untrusted senders |
 | `test/signin-machine.test.ts` | 21 | single-flight, cancellation, and late events from dead attempts |
 | `test/account-screen.test.tsx` | 41 | provider selection, progress, waiting, cancel, success, failures, removal |
+| `test/entry-point.test.ts` | 19 | the packaged entry point, the retired branding page must throw, exactly one `app://` load, no `data:` navigation, startup diagnostics, readiness literals |
 
-Total: **506 tests in 17 files.**
+Total: **525 tests in 18 files.**
 
 ### 5.1 The OAuth flow, and why it is shaped this way
 

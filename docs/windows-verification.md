@@ -290,9 +290,9 @@ Launch the app (unpackaged with `npm start`, or the installed build).
 mail", a short paragraph, and two provider cards — **Gmail** and **Microsoft** —
 each with a short description and a **Sign in** button.
 
-**If instead you see only the logo and no text or styling**, this is the open
-logo-only issue. Do these four things before anything else, because together they
-separate the remaining explanations:
+**If instead you see only the logo and no text or styling**, go to §5b.1a first —
+that is now a diagnosed fault with a specific cause. If §5b.1a shows the real
+`app://` renderer and the window is still wrong, then capture these four things:
 
 1. **Run the diagnostics** (section 4) and copy the `build.integrity` row
    verbatim. If it fails, a renderer file is missing or empty in the installed
@@ -313,6 +313,37 @@ separate the remaining explanations:
 
 Those four answers identify which of these it is: missing files, wrong MIME type,
 a runtime exception, or a stale build. Please send all four.
+
+### 5b.1a If the window shows ONLY the logo and wordmark
+
+This has a known cause, now fixed. If you still see it, the app is running the
+retired branding entry point (`src/legacy/branding-main.js`) instead of
+`dist/main/index.js`. That page was a `data:text/html` document with the logo
+inlined, which is why it rendered perfectly while showing nothing of the app.
+
+**How to tell in five seconds** — with the window open, look at DevTools
+(`Ctrl+Shift+I`) → Network:
+
+| What you see | Meaning |
+| --- | --- |
+| `data:text/html…` and `data:image/png…` only | The retired page. `package.json` "main", the `electron` invocation, or a stale build directory is pointing at the wrong file. |
+| `app://phutrue/index.html`, `app.js`, `app.css` | The real renderer. Anything wrong now is a different problem. |
+
+**The main-process console now states it outright.** Start from a terminal with
+`npm.cmd start` and read the `[startup]` lines:
+
+```
+[startup] loading app://phutrue/index.html
+[startup] renderer loaded: app://phutrue/index.html
+[startup] renderer mounted (React committed its first render)
+```
+
+If the first line is missing entirely, the app never reached `createWindow` —
+check for a thrown error above it. If it says `renderer did NOT report
+readiness`, the bundle loaded but never executed. If it prints a `WARNING: the
+loaded document is not from app://phutrue`, you are not looking at the app.
+
+Set `PHUTRUE_DEBUG=1` for per-subresource and per-navigation detail.
 
 ### 5b.2 Sign-in cannot start without configuration
 

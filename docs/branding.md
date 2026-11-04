@@ -275,8 +275,10 @@ requirement: the uninstaller must not destroy settings, accounts or stored
 mail. User data lives in `%APPDATA%\Phutrue`, outside the install directory,
 and is never removed unilaterally.
 
-`src/main/main.js` sets `app.setAppUserModelId('BarailyInovex.Phutrue')` before
-creating any window. This is what makes the taskbar group under the right
+`src/main/windows.ts` sets `app.setAppUserModelId('BarailyInovex.Phutrue')` before
+creating any window. (When this section was written the entry point was still
+`src/main/main.js`; that file was superseded by the TypeScript main process and
+now lives at `src/legacy/branding-main.js`.) This is what makes the taskbar group under the right
 identity and makes Windows attribute toast notifications to Phutrue instead of
 to `electron.exe`.
 
@@ -296,9 +298,10 @@ Icon roles are kept distinct rather than reusing one file everywhere:
 `npm run assets:verify` re-opens every generated file from disk and decodes its
 header **independently of the code that wrote it**, then asserts the branding
 rules were honoured. `npm run check:paths` separately resolves every icon
-reference in `src/main/main.js`.
+reference in the main process and confirms `package.json`, the build and
+`electron-builder.yml` agree on where things live.
 
-**Result: 95 asset checks and 14 path checks pass, 0 failures.**
+**Result: 95 asset checks and 15 path checks pass, 0 failures.**
 
 What is actually proven:
 

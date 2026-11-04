@@ -1,115 +1,117 @@
 Windows build failed
-commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
+commit: d88107455a6fc3b713b94fceb098952ded2d6598
 
 [1m[30m[46m RUN [49m[39m[22m [36mv5.1.0 [39m[90mD:/a/Phutrue/Phutrue[39m
 
-(node:7616) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(node:6712) ExperimentalWarning: SQLite is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
- [32m✓[39m test/database.test.ts[2m > [22mopenDatabase[2m > [22mcreates the schema and records the version[32m 9[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22mopenDatabase[2m > [22menables foreign keys[32m 3[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22mopenDatabase[2m > [22mis idempotent — a second migrate() is a no-op[32m 4[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mopenDatabase[2m > [22mcreates the schema and records the version[32m 10[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mopenDatabase[2m > [22menables foreign keys[32m 4[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mopenDatabase[2m > [22mis idempotent — a second migrate() is a no-op[32m 5[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22mopenDatabase[2m > [22mpasses an integrity check[32m 4[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22mconstraints[2m > [22mrejects a duplicate email[32m 3[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22mconstraints[2m > [22mcascades deletes from account to folders and messages[32m 4[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22mconstraints[2m > [22mprevents duplicate (folder, uid) messages[32m 4[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22mconstraints[2m > [22mrejects an invalid sync_state[32m 3[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22mconstraints[2m > [22mrejects an invalid folder role[32m 4[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22mtransactions[2m > [22mrolls back every statement when one throws[32m 4[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22mtransactions[2m > [22mcommits when the body succeeds[32m 10[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22mfull-text search[2m > [22mindexes inserts and removes on delete via triggers[32m 4[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mtransactions[2m > [22mrolls back every statement when one throws[32m 3[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mtransactions[2m > [22mcommits when the body succeeds[32m 3[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mfull-text search[2m > [22mindexes inserts and removes on delete via triggers[32m 5[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22mfull-text search[2m > [22mupdates the index when a message is edited[32m 4[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22ma database left by a failed migration[2m > [22mdoes not stop the application from starting[32m 184[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22ma database left by a failed migration[2m > [22mkeeps the unusable file instead of deleting it[32m 178[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22ma database left by a failed migration[2m > [22mreports where the old file went, so the user can find it[32m 178[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22ma database that contains real data is never touched[2m > [22mleaves accounts alone and refuses to start[32m 137[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma database left half-migrated[2m > [22mfinishes the migration in place, keeping the file and any data[33m 413[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma database left half-migrated[2m > [22mruns every migration twice without error[32m 4[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma database left half-migrated[2m > [22maccepts a database that has every table but no version row[33m 360[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma version marker that was lost[2m > [22mre-migrates over a complete schema without touching the data[32m 214[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma database that contains real data is never touched[2m > [22mleaves accounts alone and refuses to start[32m 172[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mmounts content rather than leaving #root empty[32m 148[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mlists accounts on mount[32m 70[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22moffers both providers when no account exists[32m 18[2mms[22m[39m
  [32m✓[39m test/database.test.ts[2m > [22ma normal start is unaffected by the recovery path[2m > [22mcreates a fresh database on a clean directory[32m 84[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22ma normal start is unaffected by the recovery path[2m > [22mreopens an already-migrated database without moving it[32m 80[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22mthe failure message names the cause[2m > [22mincludes the SQLite complaint, not just the version[32m 156[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22mthe failure message names the cause[2m > [22mkeeps a database that holds a secret, rather than rebuilding it[32m 137[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mlists accounts on mount[32m 52[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22moffers both providers when no account exists[32m 23[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mdescribes what each provider is for[32m 12[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mshows setup guidance rather than a blank screen[32m 8[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mmounts content rather than leaving #root empty[32m 142[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22ma schema that claims a version but has lost its tables[2m > [22mis rebuilt, because it holds nothing[32m 248[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mshows a load failure with a retry, not an empty list[32m 20[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mbegins a sign-in with the chosen provider[32m 23[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mbegins with Microsoft when that card is chosen[32m 12[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22minvokes begin, open and complete in that order[32m 11[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mopens the attempt returned by begin, not one it invented[32m 12[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mnever sends a URL to oauth:open[32m 15[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma normal start is unaffected by the recovery path[2m > [22mreopens an already-migrated database without moving it[32m 124[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mrenders the branding, not just the logo[32m 111[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mdescribes what each provider is for[32m 14[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mshows setup guidance rather than a blank screen[32m 13[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22minitial state[2m > [22mshows a load failure with a retry, not an empty list[32m 15[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mbegins a sign-in with the chosen provider[32m 26[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mbegins with Microsoft when that card is chosen[32m 14[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22minvokes begin, open and complete in that order[32m 14[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mopens the attempt returned by begin, not one it invented[32m 11[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mprovider selection[2m > [22mnever sends a URL to oauth:open[32m 12[2mms[22m[39m
  [32m✓[39m test/account-screen.test.tsx[2m > [22mloading and waiting states[2m > [22mshows progress while the sign-in is being started[32m 14[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mrenders the branding, not just the logo[32m 133[2mms[22m[39m
  [32m✓[39m test/account-screen.test.tsx[2m > [22mloading and waiting states[2m > [22mexplains that sign-in happens in the browser while waiting[32m 8[2mms[22m[39m
  [32m✓[39m test/account-screen.test.tsx[2m > [22mloading and waiting states[2m > [22mdisables both provider buttons while a sign-in runs[32m 9[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mloading and waiting states[2m > [22mprevents a second sign-in while one is in flight[32m 10[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mloading and waiting states[2m > [22mprevents a second sign-in while one is in flight[32m 9[2mms[22m[39m
  [32m✓[39m test/account-screen.test.tsx[2m > [22mcancellation[2m > [22mcancels the attempt that actually exists[32m 10[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mcancellation[2m > [22mshows a cancelled state that offers a retry[32m 12[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mcancellation[2m > [22mdoes not treat cancellation as a failure[32m 15[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mcancellation[2m > [22mreports a main-process cancellation as cancelled, not failed[32m 11[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22msuccess[2m > [22mshows the connected account[32m 12[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22msuccess[2m > [22madds the account to the list without a full reload[32m 10[2mms[22m[39m
- [32m✓[39m test/database.test.ts[2m > [22ma schema that claims a version but has lost its tables[2m > [22mis refused when it holds data, rather than silently replaced[32m 184[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22msuccess[2m > [22mreads the credential state after connecting, using the id only[32m 13[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mreports a begin failure with the message from the router[32m 20[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mexplains a build that is not configured for sign-in, without a retry loop[32m 10[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mreleases the attempt when the browser fails to open[32m 11[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mshows a completion failure with its code[32m 8[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22moffers a retry after a failure[32m 9[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mshows the label, address and provider[32m 10[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mshows a connected status[32m 10[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mexplains an expired credential without calling it an error[32m 8[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mflags a revoked credential as needing action[32m 9[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mrenders the environment facts read over IPC[32m 179[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mshows an error status with its message[32m 10[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mre-reads the state when asked to check the connection[32m 12[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mcancellation[2m > [22mshows a cancelled state that offers a retry[32m 10[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mcancellation[2m > [22mdoes not treat cancellation as a failure[32m 22[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mrenders the environment facts read over IPC[32m 197[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mcancellation[2m > [22mreports a main-process cancellation as cancelled, not failed[32m 19[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22msuccess[2m > [22mshows the connected account[32m 18[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22msuccess[2m > [22madds the account to the list without a full reload[32m 11[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22msuccess[2m > [22mreads the credential state after connecting, using the id only[32m 10[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mreports a begin failure with the message from the router[32m 23[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mexplains a build that is not configured for sign-in, without a retry loop[32m 9[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mreleases the attempt when the browser fails to open[32m 13[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22mshows a completion failure with its code[32m 10[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mthe failure message names the cause[2m > [22mincludes the SQLite complaint, not just the version[32m 289[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mfailures[2m > [22moffers a retry after a failure[32m 12[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mshows the label, address and provider[32m 11[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mshows a connected status[32m 9[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mexplains an expired credential without calling it an error[32m 9[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mflags a revoked credential as needing action[32m 11[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mshows an error status with its message[32m 9[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mconnected accounts[2m > [22mre-reads the state when asked to check the connection[32m 10[2mms[22m[39m
  [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22masks for confirmation before removing[32m 11[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mremoves only after the confirmation is accepted, using the account id[32m 22[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mdrops the account from the list after removal[32m 16[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mkeeps the account when the confirmation is declined[32m 14[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mreports a removal failure without dropping the account[32m 14[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mnever requests a token-bearing channel[32m 11[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mrenders no token even when the bridge returns one in an account[32m 11[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mdoes not use window.confirm for removal[32m 19[2mms[22m[39m
- [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mreports the bridge as unavailable rather than failing silently[32m 8[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mremoves only after the confirmation is accepted, using the account id[32m 18[2mms[22m[39m
  [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mrenders the Run diagnostics control[32m 191[2mms[22m[39m
-(node:2420) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mdrops the account from the list after removal[32m 14[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mkeeps the account when the confirmation is declined[32m 10[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mremoval[2m > [22mreports a removal failure without dropping the account[32m 11[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mnever requests a token-bearing channel[32m 9[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mrenders no token even when the bridge returns one in an account[32m 9[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mdoes not use window.confirm for removal[32m 16[2mms[22m[39m
+ [32m✓[39m test/account-screen.test.tsx[2m > [22mboundary hygiene[2m > [22mreports the bridge as unavailable rather than failing silently[32m 6[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22mthe failure message names the cause[2m > [22mkeeps a database that holds a secret, rather than rebuilding it[33m 339[2mms[22m[39m
+(node:3212) ExperimentalWarning: SQLite is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mprovider configuration[2m > [22mrefuses to start without a client ID, naming the variable to set[32m 8[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mopens the diagnostics view when the bundled button is clicked[32m 276[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mprovider configuration[2m > [22mrefuses to start without a client ID, naming the variable to set[32m 10[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mprovider configuration[2m > [22mfails with OAUTH_NOT_CONFIGURED rather than a generic error[32m 3[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mprovider configuration[2m > [22mrejects an unsupported provider[32m 2[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mprovider configuration[2m > [22mdoes not open a listener when configuration is missing[32m 2[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mreturns an authorisation URL using the configured client ID[32m 19[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22muses S256 and a 43-character challenge[32m 9[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mpersists exactly one pending attempt, storing a hash rather than the state[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mgives each attempt a distinct state and challenge[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mdoes not open the browser itself[32m 5[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mprunes abandoned attempts from a previous session[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mcreates an account and stores tokens encrypted[32m 23[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mreturns an account object containing no token[32m 7[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mprovider configuration[2m > [22mdoes not open a listener when configuration is missing[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mreturns an authorisation URL using the configured client ID[32m 18[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22muses S256 and a 43-character challenge[32m 7[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mpersists exactly one pending attempt, storing a hash rather than the state[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mgives each attempt a distinct state and challenge[32m 7[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mdoes not open the browser itself[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mbeginSignIn[2m > [22mprunes abandoned attempts from a previous session[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mcreates an account and stores tokens encrypted[32m 24[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mreturns an account object containing no token[32m 12[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22minlines the logo as a data URI, so no network or disk fetch is needed[32m 196[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mexchanges the code with the matching PKCE verifier[32m 12[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mburns the pending attempt so it cannot be used twice[32m 7[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mburns the pending attempt so it cannot be used twice[32m 9[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mrecords token metadata without token material[32m 7[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22muses the supplied label[32m 5[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mdoes not create a duplicate account for the same address[32m 12[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects a callback whose state does not match[32m 11[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22muses the supplied label[32m 11[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — success[2m > [22mdoes not create a duplicate account for the same address[32m 18[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects a callback whose state does not match[32m 7[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mcreates no account and stores no token when the state is wrong[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects a second, replayed callback for the same attempt[32m 6[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects an attempt id that was never issued[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects a callback with no state at all[32m 6[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects a second, replayed callback for the same attempt[32m 8[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects an attempt id that was never issued[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — forged callbacks[2m > [22mrejects a callback with no state at all[32m 8[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mreports a user cancellation distinctly[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mleaves nothing behind after a cancellation[32m 7[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mreports a token-exchange failure without leaking the provider message[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mdoes not create an account when the token exchange fails[32m 7[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mopens the diagnostics view when the bundled button is clicked[32m 296[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mrejects a token response with no identity, rather than creating a nameless account[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mcan be cancelled by the caller[32m 5[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mtimes out and reports it[32m 94[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mleaves nothing behind after a cancellation[32m 8[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mreports a missing bridge instead of rendering an empty shell[32m 104[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe bundle smoke test is actually running[2m > [22mhas a built bundle available[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mreports a token-exchange failure without leaking the provider message[32m 10[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mdoes not create an account when the token exchange fails[32m 9[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mrejects a token response with no identity, rather than creating a nameless account[32m 10[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mcan be cancelled by the caller[32m 6[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mcompleteSignIn — failures[2m > [22mtimes out and reports it[32m 92[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mensureAccessToken[2m > [22mreturns the current token when it is still valid[32m 9[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mensureAccessToken[2m > [22mrefreshes once the token is inside the refresh window, keeping the refresh token[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mensureAccessToken[2m > [22mmarks the account revoked when the provider rejects the refresh[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mensureAccessToken[2m > [22mrefuses an account with no stored credential[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mremoveAccount[2m > [22mdeletes the stored credential and the account[32m 8[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mensureAccessToken[2m > [22mrefreshes once the token is inside the refresh window, keeping the refresh token[32m 9[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mensureAccessToken[2m > [22mmarks the account revoked when the provider rejects the refresh[32m 7[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mensureAccessToken[2m > [22mrefuses an account with no stored credential[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mremoveAccount[2m > [22mdeletes the stored credential and the account[32m 7[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mtoken serialisation[2m > [22mround-trips a bundle[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mtoken serialisation[2m > [22mtreats a corrupt blob as no credential rather than throwing[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mtoken serialisation[2m > [22mkeeps the previous refresh token when a refresh response omits it[32m 0[2mms[22m[39m
@@ -118,49 +120,50 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22memailFromIdToken[2m > [22mfalls back to preferred_username and upn[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22memailFromIdToken[2m > [22mreturns null for a malformed token rather than throwing[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22memailFromIdToken[2m > [22mrejects a claim that is not an address[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mstateFor[2m > [22mreports a connected account without disclosing the token[32m 7[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mstateFor[2m > [22mreports hasAccessToken false once inside the refresh window[32m 6[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mstateFor[2m > [22mreports a connected account without disclosing the token[32m 8[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mstateFor[2m > [22mreports hasAccessToken false once inside the refresh window[32m 5[2mms[22m[39m
  [32m✓[39m test/oauth-account-service.test.ts[2m > [22mstateFor[2m > [22mreports canRefresh false when no refresh token was issued[32m 6[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mstateFor[2m > [22mthrows NOT_FOUND for a non-OAuth account[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mremoveAccount — non-OAuth accounts[2m > [22mremoves a password account and deletes its credential key[32m 5[2mms[22m[39m
- [32m✓[39m test/oauth-account-service.test.ts[2m > [22mremoveAccount — non-OAuth accounts[2m > [22mthrows NOT_FOUND for an id that does not exist[32m 2[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22minlines the logo as a data URI, so no network or disk fetch is needed[32m 202[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders the whole boot screen[2m > [22mreports a missing bridge instead of rendering an empty shell[32m 110[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe bundle smoke test is actually running[2m > [22mhas a built bundle available[32m 1[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders account setup[2m > [22moffers both providers on the real DOM[32m 100[2mms[22m[39m
- [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders account setup[2m > [22mstill reaches the boot screen through the shell[32m 179[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mstateFor[2m > [22mthrows NOT_FOUND for a non-OAuth account[32m 2[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mremoveAccount — non-OAuth accounts[2m > [22mremoves a password account and deletes its credential key[32m 2[2mms[22m[39m
+ [32m✓[39m test/oauth-account-service.test.ts[2m > [22mremoveAccount — non-OAuth accounts[2m > [22mthrows NOT_FOUND for an id that does not exist[32m 4[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders account setup[2m > [22moffers both providers on the real DOM[32m 107[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma table that exists with the wrong shape[2m > [22mis replaced when it is empty, so the app ends up correct[33m 538[2mms[22m[39m
+ [32m✓[39m test/bundle-smoke.test.ts[2m > [22mthe shipped bundle renders account setup[2m > [22mstill reaches the boot screen through the shell[32m 189[2mms[22m[39m
  [32m✓[39m test/bundle-smoke.test.ts[2m > [22mshipped files the handler must type correctly[2m > [22mindex.html references only relative assets[32m 1[2mms[22m[39m
  [32m✓[39m test/bundle-smoke.test.ts[2m > [22mshipped files the handler must type correctly[2m > [22mapp.js is non-empty and looks like a script[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mbinds an ephemeral port and reports a loopback redirect URI[32m 22[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mdelivers a well-formed callback and shuts itself down[32m 23[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22msets hardening headers on the response page[32m 7[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mshows a failure page for a callback with no state, and ends the flow[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mignores a stray path without ending the flow[32m 6[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mtimes out and releases the port[32m 136[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mcan be cancelled[32m 2[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mrefuses a non-GET method[32m 5[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mdoes not end the flow on an oversized URL[32m 8[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mlets only the first callback settle the flow[32m 6[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma table that exists with the wrong shape[2m > [22mis refused when the table holds rows[32m 207[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma schema that claims a version but has lost its tables[2m > [22mis rebuilt, because it holds nothing[32m 270[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mbinds an ephemeral port and reports a loopback redirect URI[32m 26[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mdelivers a well-formed callback and shuts itself down[32m 35[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22msets hardening headers on the response page[32m 11[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mshows a failure page for a callback with no state, and ends the flow[32m 5[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mignores a stray path without ending the flow[32m 9[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mtimes out and releases the port[32m 140[2mms[22m[39m
+ [32m✓[39m test/database.test.ts[2m > [22ma schema that claims a version but has lost its tables[2m > [22mis refused when it holds data, rather than silently replaced[32m 174[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mcan be cancelled[32m 12[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mrefuses a non-GET method[32m 10[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mdoes not end the flow on an oversized URL[32m 13[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mloopback listener[2m > [22mlets only the first callback settle the flow[32m 9[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22maccepts a normal response[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22maccepts expires_in as a numeric string[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22maccepts expires_in as a numeric string[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22mtreats a missing refresh token as null, not empty string[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22mdefaults token_type[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22mrejects a non-object body[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22mrejects a missing access token[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22mrejects a missing access token[32m 2[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22mrejects an absurdly long access token rather than storing it[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mparseTokenResponse[2m > [22mignores an invalid expires_in rather than computing a nonsense expiry[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mposts the PKCE verifier and grant parameters[32m 6[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mnever sends a client secret[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mmaps invalid_grant to an actionable message[32m 2[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mposts the PKCE verifier and grant parameters[32m 7[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mnever sends a client secret[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mmaps invalid_grant to an actionable message[32m 3[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mdoes not leak the provider error_description into the message[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mreports a network failure without leaking the URL[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mreports a network failure without leaking the URL[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mrejects a non-JSON body[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mrejects an oversized body[32m 2[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mrejects an oversized body[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mclassifies a 5xx as a network problem, not a credential problem[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mclassifies 429 as rate limiting[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-loopback.test.ts[2m > [22mexchangeCodeForTokens[2m > [22mclassifies 429 as rate limiting[32m 12[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mrefreshAccessToken[2m > [22mposts grant_type=refresh_token[32m 2[2mms[22m[39m
  [32m✓[39m test/oauth-loopback.test.ts[2m > [22mrefreshAccessToken[2m > [22mreturns null refresh token when the provider does not rotate it[32m 1[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mall checks pass[2m > [22mreports ok and includes every check[32m 6[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mall checks pass[2m > [22mreports ok and includes every check[32m 7[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mall checks pass[2m > [22mrecords a duration for every check[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mall checks pass[2m > [22mdescribes the encryption result without values[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mdatabase path and writability[2m > [22mfails when the directory rejects a write[32m 1[2mms[22m[39m
@@ -169,7 +172,7 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/diagnostics.test.ts[2m > [22mdatabase path and writability[2m > [22mfails when the path probe throws[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mschema and integrity[2m > [22mfails on a schema version mismatch[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mschema and integrity[2m > [22mfails when quick_check reports problems[32m 1[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mschema and integrity[2m > [22mfails when quick_check returns nothing at all[32m 0[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mschema and integrity[2m > [22mfails when quick_check returns nothing at all[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mnode:sqlite probe[2m > [22mfails when the probe returns the wrong value[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mnode:sqlite probe[2m > [22mfails when the probe throws, without leaking the message[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mcredential encryption[2m > [22mfails when encryption is unavailable, and says why[32m 0[2mms[22m[39m
@@ -178,10 +181,10 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/diagnostics.test.ts[2m > [22mcredential encryption[2m > [22mfails when encryption throws, without leaking the message[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mthe report never carries a secret[2m > [22mdoes not contain any sentinel even when every probe throws with it[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mthe report never carries a secret[2m > [22mkeeps secrets out of the clipboard text export[32m 1[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mthe report never carries a secret[2m > [22mcontains no field shaped like a credential[32m 2[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mthe report never carries a secret[2m > [22mcontains no field shaped like a credential[32m 1[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mredactPath[2m > [22mhides a Windows user name[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mredactPath[2m > [22mhides a Unix user name[32m 0[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mredactPath[2m > [22mleaves a path with no user component alone[32m 0[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mredactPath[2m > [22mleaves a path with no user component alone[32m 2[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mformatBytes[2m > [22mformats null[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mformatBytes[2m > [22mformats 512[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mformatBytes[2m > [22mformats 4096[32m 0[2mms[22m[39m
@@ -195,14 +198,14 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/diagnostics.test.ts[2m > [22msummarise[2m > [22mis ok for an empty list[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mreportToText[2m > [22mstates the overall result and lists every check[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mreportToText[2m > [22mannounces failures[32m 0[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mreportToText[2m > [22momits the detail line when the detail is empty[32m 1[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mdiagnostics must stay frictionless[2m > [22mis a no-argument channel, so it cannot be abused to probe other data[32m 125[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mdiagnostics must stay frictionless[2m > [22mis declared in the runtime allowlist[32m 67[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mreportToText[2m > [22momits the detail line when the detail is empty[32m 2[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mdiagnostics must stay frictionless[2m > [22mis a no-argument channel, so it cannot be abused to probe other data[32m 144[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mdiagnostics must stay frictionless[2m > [22mis declared in the runtime allowlist[32m 40[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mdiagnostics must stay frictionless[2m > [22mproduces the number of checks the Windows checklist promises[32m 2[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mscrub[2m > [22mremoves every occurrence of a literal[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mscrub[2m > [22mis case-insensitive[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mscrub[2m > [22mignores literals too short to be meaningful[32m 0[2mms[22m[39m
- [32m✓[39m test/diagnostics.test.ts[2m > [22mscrub[2m > [22mtreats regex metacharacters literally[32m 1[2mms[22m[39m
+ [32m✓[39m test/diagnostics.test.ts[2m > [22mscrub[2m > [22mtreats regex metacharacters literally[32m 2[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mscrub[2m > [22mis a no-op with no values[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mthe report scrubs the account name even when the path pattern misses[2m > [22mredactPath alone would leak the name[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mthe report scrubs the account name even when the path pattern misses[2m > [22mthe full report does not[32m 0[2mms[22m[39m
@@ -214,32 +217,24 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/diagnostics.test.ts[2m > [22mbuild integrity[2m > [22mnames every missing file, not just the first[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mbuild integrity[2m > [22mskips rather than passing when there is no renderer to inspect[32m 0[2mms[22m[39m
  [32m✓[39m test/diagnostics.test.ts[2m > [22mbuild integrity[2m > [22mdoes not leak the full profile path[32m 0[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mrenders the branding[32m 66[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mrenders the logo with an inlined data URI[32m 42[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mshows values read from the main process, not hardcoded ones[32m 19[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mis not blank[32m 13[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mshows the build stamp, so a tester can tell a stale install from a fault[32m 35[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mreports a missing bridge instead of rendering nothing[32m 8[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mreports an IPC failure as an alert[32m 6[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mreports a bridge read that throws, instead of hanging on the boot screen[32m 5[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22melectron entry point[2m > [22mpoints at the built main bundle[32m 2[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22melectron entry point[2m > [22mpoints at the built main bundle[32m 5[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22melectron entry point[2m > [22mdoes not point at any legacy file[32m 1[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22melectron entry point[2m > [22mbuilds before launching[32m 0[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22melectron entry point[2m > [22mbuilds main from the TypeScript source, not from src/legacy[32m 1[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mthe retired branding entry point[2m > [22mstill exists, so the history is readable[32m 0[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22mthe retired branding entry point[2m > [22mthrows on load rather than rendering a convincing wrong page[32m 79[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22mthe retired branding entry point[2m > [22mthrows on load rather than rendering a convincing wrong page[32m 92[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mthe retired branding entry point[2m > [22mno longer contains a data: URL document[32m 1[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mthe retired branding entry point[2m > [22mis excluded from the packaged app[32m 1[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22mnavigation surface[2m > [22mhas exactly one BrowserWindow.loadURL in the main process, and it loads app://[32m 8[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22mnavigation surface[2m > [22mhas exactly one BrowserWindow.loadURL in the main process, and it loads app://[32m 11[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mnavigation surface[2m > [22mnever loads a data: or file: document in the main process[32m 8[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22mregisters a did-fail-load handler for the main frame[32m 1[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22mlogs the loaded URL and warns when it is not the app origin[32m 1[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22mreports preload failures and renderer crashes[32m 0[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22msummarises a data: URL instead of logging its contents[32m 18[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22mpasses ordinary URLs through unchanged[32m 2[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22mdoes not log any token-shaped identifier[32m 0[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22mrenderer readiness signal[2m > [22muses the same title string as the main process expects[32m 0[2mms[22m[39m
- [32m✓[39m test/entry-point.test.ts[2m > [22mrenderer readiness signal[2m > [22mstarts from a different static title, so "not mounted" is distinguishable[32m 0[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22msummarises a data: URL instead of logging its contents[32m 19[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22mpasses ordinary URLs through unchanged[32m 3[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22mstartup diagnostics[2m > [22mdoes not log any token-shaped identifier[32m 1[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22mrenderer readiness signal[2m > [22muses the same title string as the main process expects[32m 1[2mms[22m[39m
+ [32m✓[39m test/entry-point.test.ts[2m > [22mrenderer readiness signal[2m > [22mstarts from a different static title, so "not mounted" is distinguishable[32m 1[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mrenderer readiness signal[2m > [22msets the title only after rendering[32m 0[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mstartup reports the served renderer[2m > [22mlogs the renderer directory and the size of every file it needs[32m 0[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22mstartup reports the served renderer[2m > [22mreports a missing file explicitly instead of skipping it[32m 0[2mms[22m[39m
@@ -250,67 +245,13 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/entry-point.test.ts[2m > [22mthe dist script cannot publish[2m > [22mchecks assets and builds before packaging[32m 0[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22minstaller configuration[2m > [22muses maximum compression, to stay under the 100 MB file limit[32m 0[2mms[22m[39m
  [32m✓[39m test/entry-point.test.ts[2m > [22minstaller configuration[2m > [22mnames the artifact with its version and architecture[32m 0[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mwarns when secure storage is unavailable[32m 22[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mtheme[2m > [22mpins data-theme when the user chose a theme[32m 10[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mtheme[2m > [22mleaves the attribute unset when following the system[32m 12[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mrenders a "Run diagnostics" button on the ready boot screen[32m 24[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mopens the diagnostics view when clicked[32m 22[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mcan be dismissed back to the boot screen[32m 28[2mms[22m[39m
- [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mruns the checks through the real IPC bridge when opened[32m 71[2mms[22m[39m
-(node:1400) ExperimentalWarning: SQLite is an experimental feature and might change at any time
-(Use `node --trace-warnings ...` to show where the warning was created)
-(node:6392) ExperimentalWarning: SQLite is an experimental feature and might change at any time
-(Use `node --trace-warnings ...` to show where the warning was created)
- [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mcreates and reads back an account, lower-casing the address[32m 7[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mnever exposes the secret through the model[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mrejects a duplicate address[32m 5[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mfinds by email case-insensitively[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mrecords sync state and clears the error on success[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mthrows NOT_FOUND rather than silently no-oping on remove[32m 3[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mkeeps multiple accounts independent[32m 5[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mfolder repo[2m > [22mupserts without duplicating on the second call[32m 5[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mfolder repo[2m > [22morders standard roles before "other"[32m 5[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mfolder repo[2m > [22mprunes folders the server no longer reports, cascading messages[32m 6[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mignores a duplicate (folder, uid) instead of throwing[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mpages newest-first by default and counts the full result set[32m 14[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mfilters unread and attachments[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22msearches through FTS and strips FTS operator characters[32m 9[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mupdates flags for a batch[32m 5[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mreports the highest UID for incremental sync[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mclears a folder completely when UIDVALIDITY changes[32m 5[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mcomputes folder counts[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mreturns full detail with parsed address lists and attachments[32m 4[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mdraft repo[2m > [22mround-trips a draft and updates it in place[32m 5[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22mdraft repo[2m > [22mthrows NOT_FOUND when updating a missing draft[32m 3[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22mreturns defaults on a fresh database[32m 3[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22mpersists a partial update[32m 3[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22mclamps out-of-range values instead of storing them[32m 3[2mms[22m[39m
- [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22msurvives a corrupted settings row[32m 2[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mstores and consumes an attempt once[32m 10[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrefuses a second consumption of the same state[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrefuses an unknown state[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrefuses an expired attempt[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22maccepts an attempt exactly at its deadline minus one millisecond[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mconsuming one attempt does not consume another[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mcounts and prunes[32m 7[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mprune leaves live attempts alone[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrejects a provider that is not implemented[32m 6[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrejects a duplicate state hash[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22minserts and reads back metadata[32m 7[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mupserts rather than duplicating[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mcascades when the account is removed[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mreports whether a token needs refreshing[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mdoes not ask to refresh an account with no metadata[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mrecords a status change with and without a new expiry[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mstores no token material in the metadata table[32m 4[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mmigration v2[2m > [22mcreates both tables and reaches version 2[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-repo.test.ts[2m > [22mmigration v2[2m > [22mis idempotent — reopening an existing database does not re-run it[32m 3[2mms[22m[39m
- [32m✓[39m test/protocol.test.ts[2m > [22mbenign requests[2m > [22mserves index.html for the root[32m 4[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mrenders the branding[32m 81[2mms[22m[39m
+ [32m✓[39m test/protocol.test.ts[2m > [22mbenign requests[2m > [22mserves index.html for the root[32m 5[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mbenign requests[2m > [22mserves a sibling asset[32m 1[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mbenign requests[2m > [22mserves a nested asset[32m 1[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mbenign requests[2m > [22mdecodes an encoded filename[32m 1[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mtraversal is refused[2m > [22mrefuses /../main/index.js[32m 1[2mms[22m[39m
- [32m✓[39m test/protocol.test.ts[2m > [22mtraversal is refused[2m > [22mrefuses /../../package.json[32m 1[2mms[22m[39m
+ [32m✓[39m test/protocol.test.ts[2m > [22mtraversal is refused[2m > [22mrefuses /../../package.json[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mtraversal is refused[2m > [22mrefuses /../renderer/../../main/index.js[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mtraversal is refused[2m > [22mrefuses /assets/../../main/index.js[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mtraversal is refused[2m > [22mrefuses /..%2fmain%2findex.js[32m 1[2mms[22m[39m
@@ -333,32 +274,105 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps app.mjs[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps app.css[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps index.html[32m 0[2mms[22m[39m
- [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps logo.png[32m 2[2mms[22m[39m
+ [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps logo.png[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps icon.ico[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps logo.svg[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mmaps app.js.map[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mis case-insensitive about the extension[32m 0[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mcontent types are explicit[2m > [22mrefuses an unknown extension rather than guessing[32m 0[2mms[22m[39m
- [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mserves the entry point as html[32m 49[2mms[22m[39m
+ [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mserves the entry point as html[32m 47[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mserves app.js as a JavaScript type that nosniff will accept[32m 2[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mserves app.css as text/css[32m 2[2mms[22m[39m
- [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mmarks responses no-store so a stale bundle cannot survive an update[32m 3[2mms[22m[39m
- [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mreturns 415 for a disallowed type instead of serving it[32m 2[2mms[22m[39m
+ [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mmarks responses no-store so a stale bundle cannot survive an update[32m 2[2mms[22m[39m
+ [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mreturns 415 for a disallowed type instead of serving it[32m 3[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mreturns 404 for a typed file that does not exist[32m 1[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mnever serves a file outside the root, even via ..[32m 2[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mrefuses an encoded traversal that survives URL normalisation[32m 1[2mms[22m[39m
  [32m✓[39m test/protocol.test.ts[2m > [22mserveRenderer response headers[2m > [22mreturns 404 for a foreign host[32m 1[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22mchannel allowlist[2m > [22mevery channel has a schema entry or is explicitly argument-free[32m 3[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mrenders the logo with an inlined data URI[32m 63[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mshows values read from the main process, not hardcoded ones[32m 24[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mis not blank[32m 16[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22msuccessful boot[2m > [22mshows the build stamp, so a tester can tell a stale install from a fault[32m 20[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mreports a missing bridge instead of rendering nothing[32m 11[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mreports an IPC failure as an alert[32m 4[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mreports a bridge read that throws, instead of hanging on the boot screen[32m 3[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdegraded states[2m > [22mwarns when secure storage is unavailable[32m 22[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mtheme[2m > [22mpins data-theme when the user chose a theme[32m 13[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mtheme[2m > [22mleaves the attribute unset when following the system[32m 20[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mrenders a "Run diagnostics" button on the ready boot screen[32m 22[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mopens the diagnostics view when clicked[32m 28[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mcan be dismissed back to the boot screen[32m 31[2mms[22m[39m
+ [32m✓[39m test/renderer-shell.test.tsx[2m > [22mdiagnostics is reachable from the boot screen[2m > [22mruns the checks through the real IPC bridge when opened[32m 67[2mms[22m[39m
+(node:1860) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mcreates and reads back an account, lower-casing the address[32m 10[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mnever exposes the secret through the model[32m 5[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mrejects a duplicate address[32m 5[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mfinds by email case-insensitively[32m 4[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mrecords sync state and clears the error on success[32m 5[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mthrows NOT_FOUND rather than silently no-oping on remove[32m 4[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22maccount repo[2m > [22mkeeps multiple accounts independent[32m 8[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mfolder repo[2m > [22mupserts without duplicating on the second call[32m 5[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mfolder repo[2m > [22morders standard roles before "other"[32m 7[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mfolder repo[2m > [22mprunes folders the server no longer reports, cascading messages[32m 18[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mignores a duplicate (folder, uid) instead of throwing[32m 19[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mpages newest-first by default and counts the full result set[32m 16[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mfilters unread and attachments[32m 4[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22msearches through FTS and strips FTS operator characters[32m 10[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mupdates flags for a batch[32m 5[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mreports the highest UID for incremental sync[32m 3[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mclears a folder completely when UIDVALIDITY changes[32m 13[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mcomputes folder counts[32m 3[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mmessage repo[2m > [22mreturns full detail with parsed address lists and attachments[32m 4[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mdraft repo[2m > [22mround-trips a draft and updates it in place[32m 4[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22mdraft repo[2m > [22mthrows NOT_FOUND when updating a missing draft[32m 4[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22mreturns defaults on a fresh database[32m 3[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22mpersists a partial update[32m 3[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22mclamps out-of-range values instead of storing them[32m 3[2mms[22m[39m
+ [32m✓[39m test/repos.test.ts[2m > [22msettings repo[2m > [22msurvives a corrupted settings row[32m 3[2mms[22m[39m
+(node:5984) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mstores and consumes an attempt once[32m 9[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrefuses a second consumption of the same state[32m 14[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrefuses an unknown state[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrefuses an expired attempt[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22maccepts an attempt exactly at its deadline minus one millisecond[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mconsuming one attempt does not consume another[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mcounts and prunes[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mprune leaves live attempts alone[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrejects a provider that is not implemented[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mpending attempts[2m > [22mrejects a duplicate state hash[32m 14[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22minserts and reads back metadata[32m 11[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mupserts rather than duplicating[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mcascades when the account is removed[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mreports whether a token needs refreshing[32m 5[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mdoes not ask to refresh an account with no metadata[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mrecords a status change with and without a new expiry[32m 5[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22maccount token metadata[2m > [22mstores no token material in the metadata table[32m 5[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mmigration v2[2m > [22mcreates both tables and reaches version 2[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-repo.test.ts[2m > [22mmigration v2[2m > [22mis idempotent — reopening an existing database does not re-run it[32m 3[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22mrenders a row per check plus the bridge check[32m 159[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22mreports success when everything passes[32m 19[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22mdescribes the bridge surface it verified[32m 49[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22masks main for diagnostics and for a bridge round trip[32m 17[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mfails clearly when the preload did not load[32m 25[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mfails when the bridge exposes an undocumented member[32m 25[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mfails when IPC refuses the round trip[32m 21[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mstill shows the bridge result when main diagnostics fail[32m 13[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22msecret hygiene[2m > [22mdoes not render arbitrary text from a check detail[32m 25[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mclipboard[2m > [22mcopies through main, never through navigator.clipboard[32m 18[2mms[22m[39m
+ [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mclipboard[2m > [22mdisables the copy button until a report exists[32m 6[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22mchannel allowlist[2m > [22mevery channel has a schema entry or is explicitly argument-free[32m 5[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mchannel allowlist[2m > [22mhas no schema for a channel that is not in the allowlist[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mchannel allowlist[2m > [22mhas no duplicate channel names[32m 0[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22maccepts a well-formed draft[32m 4[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects a missing password[32m 0[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects an out-of-range port[32m 1[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects an empty host[32m 0[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects oversized input rather than truncating it[32m 0[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22maccepts a well-formed draft[32m 7[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects a missing password[32m 1[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects an out-of-range port[32m 4[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects an empty host[32m 1[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22maccounts:create[2m > [22mrejects oversized input rather than truncating it[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmessages:setFlags[2m > [22maccepts a read toggle[32m 2[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmessages:setFlags[2m > [22mrejects an empty id list[32m 1[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22mmessages:setFlags[2m > [22mrejects a non-positive id[32m 0[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22mmessages:setFlags[2m > [22mrejects a non-positive id[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmessages:setFlags[2m > [22mrejects a no-op request with no flags[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmessages:setFlags[2m > [22mcaps the batch size[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmessages:list[2m > [22mclamps pageSize by rejecting out-of-range values[32m 2[2mms[22m[39m
@@ -371,7 +385,7 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmail:send[2m > [22mrejects more than 100 recipients[32m 0[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmail:send[2m > [22mrejects an oversized body[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mmail:send[2m > [22mrejects more than 50 attachments[32m 0[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22mmail:send[2m > [22mrejects a non-boolean-typed numeric string for accountId[32m 1[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22mmail:send[2m > [22mrejects a non-boolean-typed numeric string for accountId[32m 0[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22margument-free channels[2m > [22mare declared as undefined so the router accepts no payload[32m 0[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount creation cross-field rules[2m > [22maccepts a complete password account[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount creation cross-field rules[2m > [22maccepts an OAuth account with a provider[32m 1[2mms[22m[39m
@@ -380,26 +394,43 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount creation cross-field rules[2m > [22mrejects an unknown OAuth provider[32m 0[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount creation cross-field rules[2m > [22mrejects a password account with a blank IMAP host[32m 0[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount creation cross-field rules[2m > [22mnever echoes the password in the rejection[32m 2[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount enums agree across layers[2m > [22mOAuth provider spellings match the CHECK constraint[32m 3[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount enums agree across layers[2m > [22mOAuth provider spellings match the CHECK constraint[32m 4[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22maccount enums agree across layers[2m > [22mauthKind spellings match the CHECK constraint[32m 2[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22marchitecture documentation matches the code[2m > [22mstates the real number of declared channels[32m 1[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22marchitecture documentation matches the code[2m > [22mstates the real number of wired channels[32m 2[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22marchitecture documentation matches the code[2m > [22mstates the real number of wired channels[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22marchitecture documentation matches the code[2m > [22mstates a test total that matches the per-file table[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22marchitecture documentation matches the code[2m > [22mdocuments the build.integrity check it added[32m 1[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mevery channel the renderer invokes is wired in main[2m > [22mfinds the channels the renderer calls[32m 5[2mms[22m[39m
- [32m✓[39m test/ipc-validation.test.ts[2m > [22mevery channel the renderer invokes is wired in main[2m > [22mhas a handler for every channel the renderer invokes[32m 8[2mms[22m[39m
+ [32m✓[39m test/ipc-validation.test.ts[2m > [22mevery channel the renderer invokes is wired in main[2m > [22mhas a handler for every channel the renderer invokes[32m 3[2mms[22m[39m
  [32m✓[39m test/ipc-validation.test.ts[2m > [22mevery channel the renderer invokes is wired in main[2m > [22monly invokes channels that are declared in the contract[32m 2[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22mrenders a row per check plus the bridge check[32m 116[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22mreports success when everything passes[32m 30[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22mdescribes the bridge surface it verified[32m 24[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mhealthy run[2m > [22masks main for diagnostics and for a bridge round trip[32m 14[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mfails clearly when the preload did not load[32m 11[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mdeclared channels[2m > [22mdeclares all five OAuth channels[32m 6[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mdeclared channels[2m > [22maccepts a well-formed begin request[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mdeclared channels[2m > [22maccepts an optional label[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22maccepts exactly the two supported providers[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22mrejects any other provider string[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22mrejects a non-string provider[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22mrejects a begin request with no provider[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22maccepts a 32-character lowercase hex handle[32m 2[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22mrejects a handle of the wrong length or alphabet[32m 2[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22mrejects a non-string handle[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22mrejects a handle supplied through the prototype chain[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22maccepts the same handle when it is an own property[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mno secret may cross the boundary[2m > [22mrejects every attempt to smuggle a secret-bearing key[32m 4[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mno secret may cross the boundary[2m > [22mdoes not echo the rejected values in the error message[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22maccount id validation[2m > [22maccepts a positive integer[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22maccount id validation[2m > [22mrejects zero, negatives, fractions and strings[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22maccount id validation[2m > [22mrequires the account id[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mrejects an untrusted sender before validating[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mrejects an unknown channel that looks OAuth-ish[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mvalidates the payload even when the handler is missing[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mreports an unwired OAuth channel as unavailable rather than failing open[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mrejects a null payload[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbase64url[2m > [22mreplaces + and / and strips padding[32m 4[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbase64url[2m > [22mround-trips known input[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mcode verifier[2m > [22mis 43 characters for 32 random bytes[32m 2[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mcode verifier[2m > [22mis URL-safe[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mcode verifier[2m > [22muses the injected random source exactly once[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22mcode verifier[2m > [22mproduces different values across calls[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22mcode verifier[2m > [22mproduces different values across calls[32m 2[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mS256 challenge[2m > [22mmatches the RFC 7636 published test vector[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mS256 challenge[2m > [22mis deterministic[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mS256 challenge[2m > [22mchanges when the verifier changes by one character[32m 1[2mms[22m[39m
@@ -427,14 +458,14 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/oauth-core.test.ts[2m > [22mclient ID resolution[2m > [22mreads each provider from its own variable[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mclient ID resolution[2m > [22mdoes not cross providers[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mtargets the provider authorisation endpoint[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22msets the required parameters[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22msets the required parameters[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22muses S256, never plain[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mencodes the redirect_uri so the loopback address survives intact[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mjoins scopes with spaces per the spec[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22madds Google offline-access parameters[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mdoes not add Google-only parameters to Microsoft[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mtargets Microsoft and requests offline_access[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mnever contains a client_secret[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mtargets Microsoft and requests offline_access[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22mbuildAuthorizationUrl[2m > [22mnever contains a client_secret[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — success[2m > [22mextracts code and state from a well-formed callback[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — success[2m > [22mtolerates extra parameters the provider adds[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — success[2m > [22mdecodes a percent-encoded code[32m 0[2mms[22m[39m
@@ -444,57 +475,29 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — attacks[2m > [22mrejects a callback with no code[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — attacks[2m > [22mrejects a code containing characters a provider never emits[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — attacks[2m > [22mrejects an over-long code rather than forwarding it[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — attacks[2m > [22mrejects a request to any other path[32m 1[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — attacks[2m > [22mrejects a request to any other path[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — attacks[2m > [22mrejects a malformed URL without throwing[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — provider errors[2m > [22mreports access_denied with its state[32m 3[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — provider errors[2m > [22mreports access_denied with its state[32m 7[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — provider errors[2m > [22mmaps an unknown error code to unknown rather than echoing it[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — provider errors[2m > [22mnever carries the provider error_description into the result[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — provider errors[2m > [22mreports an error without state, with state null[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — provider errors[2m > [22mreports an error without state, with state null[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22mparseCallback — provider errors[2m > [22mnulls a malformed state on an error callback[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22merror normalisation[2m > [22mkeeps known codes[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22merror normalisation[2m > [22mmaps anything else to unknown[32m 2[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22merror normalisation[2m > [22mmaps anything else to unknown[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22muser-facing explanations[2m > [22mexplains every callback failure without echoing internals[32m 1[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22muser-facing explanations[2m > [22mexplains cancellation distinctly, because it is not an error[32m 0[2mms[22m[39m
  [32m✓[39m test/oauth-core.test.ts[2m > [22muser-facing explanations[2m > [22mexplains a missing client ID in terms the user can act on[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-core.test.ts[2m > [22muser-facing explanations[2m > [22mhas an explanation for every known code[32m 1[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mfails when the bridge exposes an undocumented member[32m 15[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mfails when IPC refuses the round trip[32m 18[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mbridge failures[2m > [22mstill shows the bridge result when main diagnostics fail[32m 13[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22msecret hygiene[2m > [22mdoes not render arbitrary text from a check detail[32m 14[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mclipboard[2m > [22mcopies through main, never through navigator.clipboard[32m 14[2mms[22m[39m
- [32m✓[39m test/diagnostics-view.test.tsx[2m > [22mclipboard[2m > [22mdisables the copy button until a report exists[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mdeclared channels[2m > [22mdeclares all five OAuth channels[32m 7[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mdeclared channels[2m > [22maccepts a well-formed begin request[32m 5[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mdeclared channels[2m > [22maccepts an optional label[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22maccepts exactly the two supported providers[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22mrejects any other provider string[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22mrejects a non-string provider[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mprovider validation[2m > [22mrejects a begin request with no provider[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22maccepts a 32-character lowercase hex handle[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22mrejects a handle of the wrong length or alphabet[32m 2[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22mrejects a non-string handle[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22mrejects a handle supplied through the prototype chain[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mattempt id validation[2m > [22maccepts the same handle when it is an own property[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mno secret may cross the boundary[2m > [22mrejects every attempt to smuggle a secret-bearing key[32m 3[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mno secret may cross the boundary[2m > [22mdoes not echo the rejected values in the error message[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22maccount id validation[2m > [22maccepts a positive integer[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22maccount id validation[2m > [22mrejects zero, negatives, fractions and strings[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22maccount id validation[2m > [22mrequires the account id[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mrejects an untrusted sender before validating[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mrejects an unknown channel that looks OAuth-ish[32m 1[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mvalidates the payload even when the handler is missing[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mreports an unwired OAuth channel as unavailable rather than failing open[32m 0[2mms[22m[39m
- [32m✓[39m test/oauth-ipc.test.ts[2m > [22mexisting restrictions still hold on the new channels[2m > [22mrejects a null payload[32m 0[2mms[22m[39m
- [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets default-src to 'none'[32m 3[2mms[22m[39m
- [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets script-src to 'self'[32m 0[2mms[22m[39m
+ [32m✓[39m test/oauth-core.test.ts[2m > [22muser-facing explanations[2m > [22mhas an explanation for every known code[32m 0[2mms[22m[39m
+ [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets default-src to 'none'[32m 4[2mms[22m[39m
+ [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets script-src to 'self'[32m 1[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets object-src to 'none'[32m 0[2mms[22m[39m
- [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets frame-src to 'none'[32m 0[2mms[22m[39m
+ [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets frame-src to 'none'[32m 1[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets base-uri to 'none'[32m 0[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets form-action to 'none'[32m 0[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mheader sets frame-ancestors to 'none'[32m 0[2mms[22m[39m
- [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mnever allows unsafe-inline or unsafe-eval for scripts[32m 1[2mms[22m[39m
+ [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mnever allows unsafe-inline or unsafe-eval for scripts[32m 2[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mnever allows a remote script origin[32m 1[2mms[22m[39m
- [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mblocks all network egress from the renderer[32m 0[2mms[22m[39m
+ [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mblocks all network egress from the renderer[32m 1[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mevery policy is restrictive where it matters[2m > [22mdoes not enable Trusted Types (it would crash React — see windows.ts)[32m 0[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mthe policy permits what the renderer actually loads[2m > [22mallows same-origin scripts[32m 0[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mthe policy permits what the renderer actually loads[2m > [22mallows same-origin stylesheets[32m 0[2mms[22m[39m
@@ -513,7 +516,7 @@ commit: 6e8e89b80b08b0e64e5de10da9e73a342c65e2b7
  [32m✓[39m test/csp.test.ts[2m > [22mrenderer loads from a custom origin, not file:// or data:[2m > [22mthe window loads the app:// origin, not a file path[32m 0[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mrenderer loads from a custom origin, not file:// or data:[2m > [22mthe scheme is registered as standard and secure before app ready[32m 1[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mrenderer loads from a custom origin, not file:// or data:[2m > [22mdoes not serve the renderer over file:// or an inline data: document[32m 1[2mms[22m[39m
- [32m✓[39m test/csp.test.ts[2m > [22mrenderer loads from a custom origin, not file:// or data:[2m > [22mpackage.json points main at the built bundle the renderer is built beside[32m 0[2mms[22m[39m
+ [32m✓[39m test/csp.test.ts[2m > [22mrenderer loads from a custom origin, not file:// or data:[2m > [22mpackage.json points main at the built bundle the renderer is built beside[32m 1[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mthe diagnostics screen does not weaken the policy[2m > [22mintroduces no inline script or style block[32m 0[2mms[22m[39m
  [32m✓[39m test/csp.test.ts[2m > [22mthe diagnostics screen does not weaken the policy[2m > [22muses no eval-like construct in the renderer sources[32m 1[2mms[22m[39m
 stderr | test/ipc-router.test.ts > error hygiene > converts a generic throw into INTERNAL without leaking the message
@@ -530,23 +533,23 @@ stderr | test/ipc-router.test.ts > error hygiene > never throws across the bound
  [32m✓[39m test/ipc-router.test.ts[2m > [22msender authorization[2m > [22mdoes not run the handler for an untrusted sender[32m 2[2mms[22m[39m
  [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22mrejects a payload for a channel that takes none[32m 0[2mms[22m[39m
  [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22maccepts undefined for an argument-free channel[32m 0[2mms[22m[39m
- [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22mrejects a malformed settings patch[32m 4[2mms[22m[39m
- [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22maccepts a valid settings patch and passes the parsed value through[32m 1[2mms[22m[39m
- [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22mreports failing field paths without echoing values[32m 3[2mms[22m[39m
- [32m✓[39m test/ipc-router.test.ts[2m > [22merror hygiene[2m > [22mconverts a generic throw into INTERNAL without leaking the message[32m 2[2mms[22m[39m
- [32m✓[39m test/ipc-router.test.ts[2m > [22merror hygiene[2m > [22msurfaces an AppError with its safe code and message[32m 1[2mms[22m[39m
+ [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22mrejects a malformed settings patch[32m 7[2mms[22m[39m
+ [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22maccepts a valid settings patch and passes the parsed value through[32m 2[2mms[22m[39m
+ [32m✓[39m test/ipc-router.test.ts[2m > [22mpayload validation[2m > [22mreports failing field paths without echoing values[32m 5[2mms[22m[39m
+ [32m✓[39m test/ipc-router.test.ts[2m > [22merror hygiene[2m > [22mconverts a generic throw into INTERNAL without leaking the message[32m 3[2mms[22m[39m
+ [32m✓[39m test/ipc-router.test.ts[2m > [22merror hygiene[2m > [22msurfaces an AppError with its safe code and message[32m 2[2mms[22m[39m
  [32m✓[39m test/ipc-router.test.ts[2m > [22merror hygiene[2m > [22mnever throws across the boundary[32m 3[2mms[22m[39m
  [32m✓[39m test/ipc-router.test.ts[2m > [22mlogging hygiene[2m > [22mdoes not write the error message to the console by default[32m 2[2mms[22m[39m
  [32m✓[39m test/ipc-router.test.ts[2m > [22mlifecycle[2m > [22munregisterRouter removes the handler[32m 0[2mms[22m[39m
- [32m✓[39m test/ipc-router.test.ts[2m > [22mdeclared but unimplemented channels[2m > [22mreturns an explicit not-available error, not a success[32m 2[2mms[22m[39m
- [32m✓[39m test/ipc-router.test.ts[2m > [22mdeclared but unimplemented channels[2m > [22mvalidates the payload before reporting the channel as unimplemented[32m 1[2mms[22m[39m
- [32m✓[39m test/signin-machine.test.ts[2m > [22mhappy path[2m > [22mwalks idle → starting → waiting → success[32m 4[2mms[22m[39m
+ [32m✓[39m test/ipc-router.test.ts[2m > [22mdeclared but unimplemented channels[2m > [22mreturns an explicit not-available error, not a success[32m 3[2mms[22m[39m
+ [32m✓[39m test/ipc-router.test.ts[2m > [22mdeclared but unimplemented channels[2m > [22mvalidates the payload before reporting the channel as unimplemented[32m 0[2mms[22m[39m
+ [32m✓[39m test/signin-machine.test.ts[2m > [22mhappy path[2m > [22mwalks idle → starting → waiting → success[32m 6[2mms[22m[39m
  [32m✓[39m test/signin-machine.test.ts[2m > [22mhappy path[2m > [22mstays waiting for the whole browser round-trip[32m 1[2mms[22m[39m
  [32m✓[39m test/signin-machine.test.ts[2m > [22mhappy path[2m > [22mcarries the provider through every state[32m 0[2mms[22m[39m
- [32m✓[39m test/signin-machine.test.ts[2m > [22mhappy path[2m > [22maccepts success that arrives before the attempt was reported open[32m 0[2mms[22m[39m
- [32m✓[39m test/signin-machine.test.ts[2m > [22msingle flight[2m > [22mignores a second begin while starting[32m 0[2mms[22m[39m
+ [32m✓[39m test/signin-machine.test.ts[2m > [22mhappy path[2m > [22maccepts success that arrives before the attempt was reported open[32m 1[2mms[22m[39m
+ [32m✓[39m test/signin-machine.test.ts[2m > [22msingle flight[2m > [22mignores a second begin while starting[32m 1[2mms[22m[39m
  [32m✓[39m test/signin-machine.test.ts[2m > [22msingle flight[2m > [22mignores a second begin while waiting[32m 0[2mms[22m[39m
- [32m✓[39m test/signin-machine.test.ts[2m > [22msingle flight[2m > [22mrefuses a second begin while waiting[32m 0[2mms[22m[39m
+ [32m✓[39m test/signin-machine.test.ts[2m > [22msingle flight[2m > [22mrefuses a second begin while waiting[32m 1[2mms[22m[39m
  [32m✓[39m test/signin-machine.test.ts[2m > [22msingle flight[2m > [22mallows a new begin after the previous attempt ended[32m 0[2mms[22m[39m
  [32m✓[39m test/signin-machine.test.ts[2m > [22msingle flight[2m > [22mreports busy only while an attempt occupies resources[32m 1[2mms[22m[39m
  [32m✓[39m test/signin-machine.test.ts[2m > [22mcancellation[2m > [22mcancels from starting and waiting[32m 0[2mms[22m[39m
@@ -565,7 +568,7 @@ stderr | test/ipc-router.test.ts > error hygiene > never throws across the bound
  [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the passing case[2m > [22mreports the real Electron versions, not placeholders[32m 1[2mms[22m[39m
  [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the failures it must catch[2m > [22mfails when the document is not from the app origin[32m 0[2mms[22m[39m
  [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the failures it must catch[2m > [22mfails when React never mounted[32m 1[2mms[22m[39m
- [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the failures it must catch[2m > [22mfails when the setup screen text is absent[32m 0[2mms[22m[39m
+ [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the failures it must catch[2m > [22mfails when the setup screen text is absent[32m 1[2mms[22m[39m
  [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the failures it must catch[2m > [22mfails when only some of the required text is present[32m 1[2mms[22m[39m
  [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the failures it must catch[2m > [22mfails when the main frame recorded a load failure[32m 1[2mms[22m[39m
  [32m✓[39m test/smoke.test.ts[2m > [22minspectWindow — the failures it must catch[2m > [22mfails rather than throwing when the renderer cannot be inspected[32m 0[2mms[22m[39m
@@ -575,11 +578,11 @@ stderr | test/ipc-router.test.ts > error hygiene > never throws across the bound
  [32m✓[39m test/smoke.test.ts[2m > [22mrecovery is reported, not hidden[2m > [22mleaves it null on a normal start[32m 0[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m19 passed[39m[22m[90m (19)[39m
-[2m      Tests [22m [1m[32m556 passed[39m[22m[90m (556)[39m
-[2m   Start at [22m 09:42:22
-[2m   Duration [22m 5.44s[2m (tests 49%, environment 37%, import 11%, transform 1%, worker 1%, setup 1%)[22m
+[2m      Tests [22m [1m[32m559 passed[39m[22m[90m (559)[39m
+[2m   Start at [22m 10:46:10
+[2m   Duration [22m 6.99s[2m (tests 51%, environment 35%, import 10%, transform 2%, worker 1%, setup 1%)[22m
 
-[2m    Isolate [22m [33m19 workers spawned[39m[2m · ~430ms startup each (spawn + environment, per file)[22m
-[2m            [22m [2mat least ~2.29s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+[2m    Isolate [22m [33m19 workers spawned[39m[2m · ~537ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~2.86s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
 
 exit code: 0

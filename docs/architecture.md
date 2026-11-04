@@ -208,6 +208,21 @@ proven before those protocols are layered on.
 
 The tester-facing checklist is **[docs/windows-verification.md](windows-verification.md)**.
 
+### 4.8 Build stamping
+
+`scripts/build.mjs` hashes the emitted renderer files (`index.html`, `app.js`,
+`app.css`) into a 12-character stamp and rebuilds the main bundle with that value
+baked in by esbuild's `define`. `app:info` reports it, and the `build.integrity`
+diagnostic checks that each expected file exists and is non-empty, naming any
+that are not.
+
+The reason is specific to this project's constraints. Nothing in the sandbox can
+run the Electron binary, so no claim about what a packaged Windows build displays
+can be checked here. The most expensive failure mode is a tester looking at a
+stale or partially extracted install and reporting a rendering bug. A stamp tells
+them which bytes they are running, and `build.integrity` distinguishes "a file is
+missing" from "the window will not paint" without anyone needing to guess.
+
 ## 5. Milestones and current status
 
 Status as of the latest checkpoint. "Verified" means covered by tests or checks
@@ -217,7 +232,7 @@ that were actually executed; it does not mean the feature was exercised by hand.
 | --- | --- | --- | --- |
 | M1 | Architecture foundation, build, IPC skeleton | `npm run build` produces main/preload/renderer bundles; app shell renders; typecheck clean | **Verified** |
 | M2 | Database, migrations, secure IPC, settings | Schema created and migrated; settings persist across restarts; IPC rejects malformed input | **Verified** — storage, migrations, repos, secret store and validated IPC. The Settings *screen* is not built. |
-| M3 | Account setup and authentication | IMAP/SMTP validation against a live test server; OAuth flows wired; secrets encrypted | **Not started** — the account repository and schema exist; no mail service, no OAuth, no UI |
+| M3 | Account setup and authentication | OAuth flows wired; secrets encrypted; account management UI | **In progress** — OAuth (PKCE + loopback + system browser), encrypted credentials and the account UI are implemented and tested against injected endpoints. **Not verified against a real provider**, and generic IMAP/SMTP password accounts are deferred to a later stage. |
 | M4 | Inbox, folders, message reading | Real folders and messages listed; reading pane renders sanitized HTML | **Not started** |
 | M5 | Compose, drafts, sending, attachments | Send via SMTP; drafts recovered; attachments round-trip | **Not started** |
 | M6 | Sync, search, advanced operations | Incremental sync, full-text search, move/flag/delete | **Not started** — FTS5 index and UIDVALIDITY handling exist at the database layer only |
@@ -236,11 +251,12 @@ them yet:
 - `src/main/secrets/store.ts` — DPAPI-backed secret store with a canary probe.
   Its contract is exercised only through the pieces that can run without the
   Electron binary; `safeStorage` itself cannot be tested here (see §7).
-- `src/main/ipc/schemas.ts` — a schema for every one of the **26** declared
-  channels. Handlers are wired for **six** (`app:info`, `app:diagnostics`,
-  `app:copyToClipboard`, `settings:get`, `settings:update`, `accounts:list`); the
-  other twenty return a deliberate "This feature is not available in this build"
-  `INTERNAL` result from the router, which a test pins.
+- `src/main/ipc/schemas.ts` — a schema for every one of the **31** declared
+  channels. Handlers are wired for **11** (`app:info`, `app:diagnostics`,
+  `app:copyToClipboard`, `settings:get`, `settings:update`, `accounts:list`,
+  `oauth:begin`, `oauth:open`, `oauth:complete`, `oauth:cancel`, `oauth:state`);
+  the other 20 return a deliberate "This feature is not available in this
+  build" `INTERNAL` result from the router, which a test pins.
 
 ### Test inventory at this checkpoint
 
@@ -256,8 +272,47 @@ them yet:
 | `test/diagnostics.test.ts` | 48 | every diagnostics check, every degraded path, and sentinel-injection proof that no secret reaches the report |
 | `test/diagnostics-view.test.tsx` | 11 | the renderer half of diagnostics: bridge present, no undocumented members, clipboard routed through main |
 | `test/csp.test.ts` | 31 | CSP restrictiveness, header/meta agreement, `app://` loading assumptions |
+| `test/oauth-core.test.ts` | 63 | PKCE (incl. the RFC 7636 Appendix B vector), state hashing, provider config, callback parsing and error reduction |
+| `test/oauth-loopback.test.ts` | 29 | the real loopback HTTP listener: one request, timeouts, replay refusal, response headers, token parsing |
+| `test/oauth-repo.test.ts` | 19 | pending attempts, single-use consumption, expiry, account metadata |
+| `test/oauth-account-service.test.ts` | 46 | the full sign-in flow with injected fetch: state rejection, no-leak guarantees, refresh, removal |
+| `test/oauth-ipc.test.ts` | 22 | the five OAuth channels reject smuggled secrets, malformed handles and untrusted senders |
+| `test/signin-machine.test.ts` | 21 | single-flight, cancellation, and late events from dead attempts |
+| `test/account-screen.test.tsx` | 41 | provider selection, progress, waiting, cancel, success, failures, removal |
 
-Total: **246 tests in 10 files.**
+Total: **495 tests in 17 files.**
+
+### 5.1 The OAuth flow, and why it is shaped this way
+
+Recorded here because the reasoning is not visible from the code.
+
+**Loopback redirect, not a custom scheme.** `http://127.0.0.1:<ephemeral>/callback`
+on a port the OS assigns. A custom `phutrue://` scheme would need a Windows
+registry entry during install (a per-user write, and a hijackable one: any other
+program can claim the same scheme). A fixed port collides with anything else
+using it. An ephemeral loopback port has neither problem.
+
+**The system browser, never an embedded window.** `shell.openExternal` is called
+in the main process. The renderer cannot navigate, and `oauth:open` takes an
+attempt id rather than a URL, so it cannot become an "open anything" primitive.
+
+**PKCE S256 is mandatory**, not conditional on provider support. It is the only
+thing that protects the authorisation code if the loopback port is guessed by a
+local process during the redirect, and it costs one SHA-256.
+
+**State is hashed at rest and compared in constant time.** The raw state travels
+through the browser; only its SHA-256 is stored, so a database read cannot yield
+a usable state. Consumption is a single `UPDATE ... WHERE consumed_at IS NULL`
+guarded by expiry, so a replay finds nothing and the check is atomic.
+
+**No token crosses IPC.** No channel returns an access token, refresh token, ID
+token, authorisation code or PKCE verifier. The renderer learns only that an
+account is connected and whether it can currently be used.
+
+**Credential writes are ordered.** Tokens are stored before the account row on
+create, and deleted before the account row on removal, so a crash cannot leave an
+account that looks usable with no credential, or an orphaned secret with no
+owner.
 
 Risks tracked in §7.
 

@@ -102,6 +102,24 @@ function successFetch(claims: Record<string, unknown> = { email: 'user@example.c
   };
 }
 
+/**
+ * Create a completion promise that is safe to await later.
+ *
+ * `completeSignIn` is started before the callback is delivered, so the promise
+ * exists (and can reject) before the test reaches its `await`. V8 reports a
+ * rejection that is unobserved at the moment it happens as unhandled, even when
+ * it is awaited microseconds later. Attaching a no-op handler immediately marks
+ * it observed; the real assertions below still see the rejection, because the
+ * original promise is what is awaited.
+ *
+ * Without this, the suite passes while Vitest warns that unhandled rejections
+ * could be masking real failures — a warning that trains people to ignore it.
+ */
+function track<T>(promise: Promise<T>): Promise<T> {
+  promise.catch(() => {});
+  return promise;
+}
+
 /** Play the provider: hit the listener with a callback. */
 function deliverCallback(redirectUri: string, query: string): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -286,7 +304,7 @@ describe('completeSignIn — success', () => {
     const h = harness({ fetchImpl });
     const begun = await begin(h);
 
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=auth-code&state=${begun.state}`);
     const account = await completion;
 
@@ -304,7 +322,7 @@ describe('completeSignIn — success', () => {
     const { fetchImpl } = successFetch();
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
 
@@ -319,7 +337,7 @@ describe('completeSignIn — success', () => {
     const { fetchImpl, calls } = successFetch();
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=the-code&state=${begun.state}`);
     await completion;
 
@@ -335,7 +353,7 @@ describe('completeSignIn — success', () => {
     const { fetchImpl } = successFetch();
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     await completion;
 
@@ -353,7 +371,7 @@ describe('completeSignIn — success', () => {
     const { fetchImpl } = successFetch();
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
 
@@ -368,7 +386,7 @@ describe('completeSignIn — success', () => {
     const { fetchImpl } = successFetch();
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId, 'Personal mail');
+    const completion = track(h.service.completeSignIn(begun.attemptId, 'Personal mail'));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
     expect(account.label).toBe('Personal mail');
@@ -380,7 +398,7 @@ describe('completeSignIn — success', () => {
 
     for (let i = 0; i < 2; i++) {
       const begun = await begin(h);
-      const completion = h.service.completeSignIn(begun.attemptId);
+      const completion = track(h.service.completeSignIn(begun.attemptId));
       await deliverCallback(begun.redirectUri, `code=c${i}&state=${begun.state}`);
       await completion;
     }
@@ -399,7 +417,7 @@ describe('completeSignIn — forged callbacks', () => {
     const h = harness({ fetchImpl });
     const begun = await begin(h);
 
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     // A plausible but wrong state: right shape, wrong value.
     const forged = `${begun.state.slice(0, -1)}${begun.state.endsWith('A') ? 'B' : 'A'}`;
     await deliverCallback(begun.redirectUri, `code=attacker&state=${forged}`);
@@ -412,7 +430,7 @@ describe('completeSignIn — forged callbacks', () => {
     const h = harness({ fetchImpl });
     const begun = await begin(h);
 
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=attacker&state=${'z'.repeat(43)}`);
     await expect(completion).rejects.toThrow();
 
@@ -427,17 +445,17 @@ describe('completeSignIn — forged callbacks', () => {
     const h = harness({ fetchImpl });
     const begun = await begin(h);
 
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     await completion;
 
     // The attempt is gone from the in-flight map.
-    await expect(h.service.completeSignIn(begun.attemptId)).rejects.toThrow(/no longer active/i);
+    await expect(track(h.service.completeSignIn(begun.attemptId))).rejects.toThrow(/no longer active/i);
   });
 
   it('rejects an attempt id that was never issued', async () => {
     const h = harness();
-    await expect(h.service.completeSignIn('a'.repeat(32))).rejects.toThrow(/no longer active/i);
+    await expect(track(h.service.completeSignIn('a'.repeat(32)))).rejects.toThrow(/no longer active/i);
   });
 
   it('rejects a callback with no state at all', async () => {
@@ -445,7 +463,7 @@ describe('completeSignIn — forged callbacks', () => {
     const h = harness({ fetchImpl });
     const begun = await begin(h);
 
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, 'code=orphan-code');
     await expect(completion).rejects.toThrow();
   });
@@ -459,7 +477,7 @@ describe('completeSignIn — failures', () => {
   it('reports a user cancellation distinctly', async () => {
     const h = harness();
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `error=access_denied&state=${begun.state}`);
 
     try {
@@ -474,7 +492,7 @@ describe('completeSignIn — failures', () => {
   it('leaves nothing behind after a cancellation', async () => {
     const h = harness();
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `error=access_denied&state=${begun.state}`);
     await expect(completion).rejects.toThrow();
 
@@ -491,7 +509,7 @@ describe('completeSignIn — failures', () => {
         ),
     });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
 
     try {
@@ -507,7 +525,7 @@ describe('completeSignIn — failures', () => {
   it('does not create an account when the token exchange fails', async () => {
     const h = harness({ fetchImpl: async () => new Response('', { status: 500 }) });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     await expect(completion).rejects.toThrow();
     expect(createAccountRepo(h.db).list()).toHaveLength(0);
@@ -516,7 +534,7 @@ describe('completeSignIn — failures', () => {
   it('rejects a token response with no identity, rather than creating a nameless account', async () => {
     const h = harness({ fetchImpl: successFetch({}).fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     await expect(completion).rejects.toThrow(/address/i);
     expect(createAccountRepo(h.db).list()).toHaveLength(0);
@@ -525,7 +543,7 @@ describe('completeSignIn — failures', () => {
   it('can be cancelled by the caller', async () => {
     const h = harness();
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     h.service.cancel(begun.attemptId);
     await expect(completion).rejects.toThrow(/cancelled/i);
   });
@@ -541,7 +559,7 @@ describe('completeSignIn — failures', () => {
       timeoutMs: 80,
     });
     const started = await service.beginSignIn({ provider: 'google' });
-    await expect(service.completeSignIn(started.attemptId)).rejects.toThrow(/timed out/i);
+    await expect(track(service.completeSignIn(started.attemptId))).rejects.toThrow(/timed out/i);
   });
 });
 
@@ -575,7 +593,7 @@ describe('ensureAccessToken', () => {
 
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
     return { h, account };
@@ -620,7 +638,7 @@ describe('ensureAccessToken', () => {
     });
 
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
 
@@ -661,7 +679,7 @@ describe('removeAccount', () => {
     const { fetchImpl } = successFetch();
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
 
@@ -755,7 +773,7 @@ describe('stateFor', () => {
     const { fetchImpl } = successFetch();
     const h = harness({ fetchImpl });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
     return { h, account };
@@ -796,7 +814,7 @@ describe('stateFor', () => {
         ),
     });
     const begun = await begin(h);
-    const completion = h.service.completeSignIn(begun.attemptId);
+    const completion = track(h.service.completeSignIn(begun.attemptId));
     await deliverCallback(begun.redirectUri, `code=c&state=${begun.state}`);
     const account = await completion;
 

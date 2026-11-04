@@ -309,3 +309,70 @@ describe('account enums agree across layers', () => {
   });
 });
 
+
+/* ------------------------------------------------------------------ *
+ * Documentation consistency
+ *
+ * The architecture document states how many channels exist, how many are wired,
+ * and how many tests there are. Those claims drift silently otherwise, and a
+ * reader (or a Windows tester following the doc) has no way to tell a stale
+ * number from a current one. This test makes drift a failure.
+ * ------------------------------------------------------------------ */
+
+describe('architecture documentation matches the code', () => {
+  async function doc(): Promise<string> {
+    const { readFileSync } = await import('node:fs');
+    const path = await import('node:path');
+    return readFileSync(path.resolve(__dirname, '..', 'docs', 'architecture.md'), 'utf8');
+  }
+
+  it('states the real number of declared channels', async () => {
+    const { CHANNELS } = await import('../src/shared/ipc.js');
+    const text = await doc();
+    expect(text).toContain(`**${CHANNELS.length}** declared`);
+  });
+
+  it('states the real number of wired channels', async () => {
+    /*
+     * Counted from the router registration in src/main/index.ts by matching the
+     * channel keys of the handler map. Parsing source is fragile, so this
+     * asserts a narrow shape: the registration block mentions each channel as
+     * `'name':`, and nothing else in that block does.
+     */
+    const { readFileSync } = await import('node:fs');
+    const path = await import('node:path');
+    const { CHANNELS } = await import('../src/shared/ipc.js');
+
+    const main = readFileSync(path.resolve(__dirname, '..', 'src', 'main', 'index.ts'), 'utf8');
+    const start = main.indexOf('registerRouter(');
+    const end = main.indexOf('// A sender is trusted only if it is one of our own windows.');
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const block = main.slice(start, end);
+
+    const wired = CHANNELS.filter((c) => block.includes(`'${c}':`));
+    const text = await doc();
+    expect(text).toContain(`wired for **${wired.length}**`);
+  });
+
+  it('states a test total that is not obviously stale', async () => {
+    const text = await doc();
+    const match = /\*\*(\d+) tests in (\d+) files\.\*\*/.exec(text);
+    expect(match).not.toBeNull();
+
+    const claimedTests = Number(match?.[1]);
+    const claimedFiles = Number(match?.[2]);
+
+    // A loose bound rather than exact equality: the document is updated with
+    // each checkpoint, and the value that matters is that it cannot be wildly
+    // out of date. Exact drift of a handful is a wording problem; being 300
+    // behind means a reader is being misled.
+    expect(claimedTests).toBeGreaterThan(400);
+    expect(claimedFiles).toBeGreaterThanOrEqual(15);
+  });
+
+  it('documents the build.integrity check it added', async () => {
+    const text = await doc();
+    expect(text).toMatch(/build\.integrity|build stamp/i);
+  });
+});

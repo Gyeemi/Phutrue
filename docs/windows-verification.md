@@ -144,11 +144,12 @@ Then the **Network** tab, one reload (`Ctrl+R`): every request should be
 
 ## 4. Run the in-app diagnostics
 
-Click **Run diagnostics** on the boot screen.
+The app now opens on the **account setup** screen. Click **About & diagnostics**
+in the top bar, then **Run diagnostics**.
 
-**Expected: all 7 checks PASS** — six produced by the main process (the
-`database.*`, `sqlite.*` and `storage.*` rows) and one produced by the renderer
-(`bridge.ipc`, which only the renderer can observe).
+**Expected: all 8 checks PASS** — seven produced by the main process (the
+`database.*`, `sqlite.*`, `storage.*` and `build.*` rows) and one produced by the
+renderer (`bridge.ipc`, which only the renderer can observe).
 
 | Check | Expected detail | What a failure means |
 | --- | --- | --- |
@@ -158,7 +159,14 @@ Click **Run diagnostics** on the boot screen.
 | `database.integrity` | `quick_check: ok` | Actual file corruption — stop and report immediately |
 | `sqlite.query` | `SELECT 1 returned 1` | `node:sqlite` is unavailable in this Electron build |
 | `storage.encryption` | `round-trip ok; stored form is ciphertext` | DPAPI unavailable, or — worst case — a silent plaintext fallback |
+| `build.integrity` | `stamp <12 hex chars>; 3 files present` | `index.html`, `app.js` or `app.css` is missing or empty in the installed tree — a stale or partial build |
 | `bridge.ipc` | `round trip ok; bridge exposes invoke, on, platform` | The preload failed to load, or the bridge leaks an extra member |
+
+`build.integrity` is the row to read first when the window is blank, or shows
+only a logo with no styling. It checks the three files the document cannot boot
+without, and names any that are missing or empty. If it fails, the problem is the
+installed files, not the display driver, the GPU or Chromium — reinstalling will
+fix it, and no amount of restarting will.
 
 `storage.encryption` is the most important row. This build **refuses to store
 credentials** if encryption is unavailable; it never falls back to plaintext.
@@ -267,6 +275,102 @@ PNGs in the second.
 
 ---
 
+## 5b. Account setup screen (M3)
+
+This section verifies the surface added in milestone 3. None of it has been
+executed on Windows — the sandbox has no display, so every claim below is
+something **you** are confirming for the first time.
+
+### 5b.1 The screen itself
+
+Launch the app (unpackaged with `npm start`, or the installed build).
+
+**Expected:** a light top bar with "Phutrue · by Baraily Inovex" and an
+**About & diagnostics** link on the right. Below it, a heading "Set up your
+mail", a short paragraph, and two provider cards — **Gmail** and **Microsoft** —
+each with a short description and a **Sign in** button.
+
+**If instead you see only the logo and no text or styling**, stop and run the
+diagnostics (section 4). The `build.integrity` row will say whether `app.css` or
+`app.js` is missing from the installed tree. That is the single most useful
+piece of evidence for the open logo-only issue — please send that row's status
+and detail verbatim, along with the Console output from `Ctrl+Shift+I`.
+
+### 5b.2 Sign-in cannot start without configuration
+
+Unless `PHUTRUE_GOOGLE_CLIENT_ID` / `PHUTRUE_MICROSOFT_CLIENT_ID` were set before
+launch, clicking **Sign in** must fail immediately, in the app, with:
+
+> Sign-in is not set up in this build.
+
+**Expected:** no browser opens, no error dialog appears, and no account is added.
+This proves the guard runs before any network or browser activity.
+
+### 5b.3 The browser is the system browser
+
+With a client ID configured, clicking **Sign in** should:
+
+1. show "Opening your browser…" briefly;
+2. **open your default browser** — Edge, Chrome, Firefox, whatever you use — at
+   the provider's real consent page, in a normal tab with an address bar;
+3. leave the app showing "Finish signing in your browser" and a
+   **Cancel sign-in** button.
+
+**Automatic failure if:** a sign-in page renders *inside* the Phutrue window, or
+a stripped-down Electron window appears instead of a real browser. That would
+mean an embedded login window, which this design forbids.
+
+The address bar should read `http://127.0.0.1:<port>/callback` after you approve.
+
+### 5b.4 Cancellation
+
+Click **Cancel sign-in** while waiting.
+
+**Expected:** the panel shows "Sign-in cancelled · No account was added", with
+**Try again** and **Dismiss**. No account appears in the list.
+
+### 5b.5 A completed sign-in
+
+Complete the provider's consent page with a real account.
+
+**Expected:** the panel shows "Connected", the account's address, and the account
+appears in the list with a green **Connected** badge and a provider chip.
+
+Then click **Check connection** — the badge should stay **Connected**.
+
+### 5b.6 Removal
+
+Click **Remove** on the account.
+
+**Expected:** an inline confirmation appears in place ("Remove *address*?") with
+**Remove account** and **Keep account**. Nothing is deleted until you confirm.
+After confirming, the account disappears and, with no accounts left, the setup
+screen returns.
+
+### 5b.7 Credential storage
+
+After a successful sign-in, confirm the database holds **no readable token**:
+
+```powershell
+cd "$env:APPDATA\Phutrue"
+Select-String -Path phutrue.db -Pattern "ya29\." -Encoding Byte -SimpleMatch
+Select-String -Path phutrue.db -Pattern "refresh_token"
+```
+
+**Expected:** no matches for `ya29.` (Google access token prefix) and no readable
+`refresh_token`. A binary search may produce noise; what matters is that no
+token-shaped ASCII string appears.
+
+### 5b.8 What this does NOT prove
+
+The OAuth flow has **never** been executed against a real Google or Microsoft
+endpoint. Everything in the automated suite runs against injected fetches and a
+local loopback socket. Sections 5b.5 and 5b.6 are the first real test of the
+flow, and until you have run them, the honest status is "implemented, not
+verified".
+
+---
+
 ## 6. Install, launch, uninstall
 
 1. Run `release\Phutrue Setup 0.1.0.exe`.
@@ -276,7 +380,7 @@ PNGs in the second.
    menu shortcut.
 4. **Run diagnostics again inside the installed app.** This is the run that
    matters: it exercises the packaged `app://` handler, the packaged window icon,
-   and the packaged database path. All 7 checks must pass.
+   and the packaged database path. All 8 checks must pass.
 5. Confirm the taskbar icon and the Start menu shortcut icon are the Phutrue
    logo, not the default Electron icon.
 6. Close the app. Confirm the process exits (Task Manager shows no `Phutrue.exe`
